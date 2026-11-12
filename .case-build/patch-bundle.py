@@ -381,6 +381,10 @@ sub('this.flying||this.nav.update(e);', 'this.flying||(this.zzGlideStep(e),this.
 sub('if((this.el.clientWidth<700||this.zzLit)&&!this.flying&&!this.nav.drag', 'if((this.el.clientWidth<700||this.zzLit)&&!this.flying&&!this.zzGlide&&!this.nav.drag')
 sub('onAngle:e=>{t.current&&(t.current.w4=e)}', 'onAngle:e=>{t.current&&(window.innerWidth<700?t.current.zzStep(e):t.current.w4=e)}')
 
+# ---- 27. The dial's bars stay level ----------------------------------------------------------------
+# While scrolling, each bar's left end used to dip or rise with the scroll speed (up to 10px), tilting it.
+sub('h=Math.max(-10,Math.min(10,y*.9))*(.4+.6*l)', 'h=0')
+
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
 open(CSS_OUT, 'w').write(css)
