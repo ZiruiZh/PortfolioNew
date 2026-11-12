@@ -281,6 +281,12 @@ sub('!f&&d.t>.7&&(f=!0,this.ev.onOpen(e))', '!f&&d.t>.97&&(f=!0,this.ev.onOpen(e
 sub('c.src=`./${r.img}`,o.userData.node=s', 'c.src=`./${r.thumb||r.img}`,o.userData.node=s')
 sub('this.glyphs=new Pg(r?200:420,r_)', 'this.glyphs=new Pg(r?140:320,r_)')
 
+# ---- 21. Touch drags turn the view further -------------------------------------------------------
+# The drag is scaled by the screen's height, so on a tall, narrow phone a full-width swipe barely turned it.
+TOUCH_GAIN = 2.5
+sub('let t=e.clientX-this.drag.x,n=e.clientY-this.drag.y;',
+    f'let k=e.pointerType===`touch`?{TOUCH_GAIN}:1,t=(e.clientX-this.drag.x)*k,n=(e.clientY-this.drag.y)*k;')
+
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
 open(CSS_OUT, 'w').write(css)
@@ -295,7 +301,7 @@ html = html.replace(main_tag, f'<script type="module" src="./work/case-embed.js?
                     + main_tag.replace('index-DnZOTAZ6.js', f'index-DnZOTAZ6.js?v={stamp}'))
 # Link previews: a looping video (og:video) for apps that play one, its poster as the image everywhere else.
 SITE_URL = 'https://www.zirui.ca'  # the address the site is served from; previews need absolute links
-TITLE = 'Zirui Zhao · Lattice of Works'
+TITLE = 'Zirui Zhao'  # the title link previews show
 DESCRIPTION = "Zirui Zhao's works floating in an endless, glitching lattice."
 IMAGE_ALT = "Zirui Zhao's works floating over a topographic lattice"
 og = f"""
