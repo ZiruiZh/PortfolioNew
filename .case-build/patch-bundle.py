@@ -334,5 +334,9 @@ for f in ('og/preview.jpg', 'og/preview.mp4'):
 FONTS = '<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;600;700&family=Chivo+Mono:wght@400&display=swap" rel="stylesheet" />'
 assert html.count(FONTS) == 1
 html = html.replace(FONTS, FONTS.replace('rel="stylesheet" />', 'rel="stylesheet" media="print" onload="this.media=\'all\'" />'))
+# The browser tab reads just the name, like the link previews.
+TAB = '<title>Zirui Zhao · Lattice of Works</title>'
+assert html.count(TAB) == 1
+html = html.replace(TAB, '<title>Zirui Zhao</title>')
 open(f'{SITE}/index.html', 'w').write(html)
 print('ok', len(s))
