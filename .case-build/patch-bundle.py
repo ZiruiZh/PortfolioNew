@@ -354,22 +354,31 @@ sub('if(this.el.clientWidth<700&&!this.flying&&!this.nav.drag', 'if((this.el.cli
 sub('(this.frameN=(this.frameN+1)%2)==0&&this.updateRoutes(t,n)', '(this.frameN=(this.frameN+1)%(this.zzLit?4:2))==0&&this.updateRoutes(t,n)')
 
 # ---- 26. Phones: the dial steps from work to work ---------------------------------------------------
-# On a phone the right-edge dial no longer turns the lattice: every 4 ticks moves to the next (finger up) or
-# previous work in the current view (Works' four, or Playground's pieces), and the camera glides to centre it.
+# On a phone the right-edge dial no longer turns the lattice: every 6 ticks moves to the next (finger up) or
+# previous work in the current view (Works' cards, or Playground's pieces). The camera keeps its angle and glides
+# (a critically damped spring on where it looks and how far back it sits) until that work fills about half the
+# screen. A new step only redirects the glide, so a quick run of steps is one smooth motion, never a cut.
+STEP_TICKS = 6
 sub('dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)',
-    'zzStep(e){let k=Math.round(e/(v_*Math.PI/180)/4);if(this.zzK===void 0){this.zzK=k;return}if(this.zzMode!==this.mode)this.zzMode=this.mode,this.zzI=-1;'
+    f'zzStep(e){{let k=Math.round(e/(v_*Math.PI/180)/{STEP_TICKS});if(this.zzK===void 0){{this.zzK=k;return}}if(this.zzMode!==this.mode)this.zzMode=this.mode,this.zzI=-1;'
     'let d=k-this.zzK;if(!d)return;this.zzK=k;let L=this.activeNodes(),n=L.length;if(!n)return;'
     'this.zzI=((this.zzI+d)%n+n)%n,this.zzCenter(L[this.zzI])}'
-    # The glide stops where the work fills about 60% of the screen, and re-aims at its live position every frame,
-    # so a piece that drifts on the way still lands centred.
-    'zzCenter(t){if(this.focus||!t)return;this.flight?.kill();'
-    'let n=this.camera.position.clone(),r=this.camera.quaternion.clone(),i=new J(0,1,0).applyQuaternion(r),'
-    'o=n.clone().sub(t.rest).normalize(),F=Math.tan(this.camera.fov*Math.PI/360)*2,c=Math.max(t.sprite.scale.x/(.62*F*this.camera.aspect),t.sprite.scale.y/(.6*F)),a=new J,l=new J,u=new Go,M=new ms,'
-    'aim=()=>{a.copy(t.rest).addScaledVector(i,t.sprite.scale.y*.56),l.copy(a).addScaledVector(o,c),u.setFromRotationMatrix(M.lookAt(l,a,i))};'
-    'this.flying=!0,this.nav.stop();let d={t:0};'
-    'this.flight=Mi.to(d,{t:1,duration:this.reduced?.01:.7,ease:`power3.out`,onUpdate:()=>{aim(),this.camera.position.lerpVectors(n,l,d.t),this.camera.quaternion.copy(r).slerp(u,d.t)},'
-    'onComplete:()=>{aim(),this.nav.setFrom(l.clone(),a.clone()),this.flying=!1}})}'
+    'zzCenter(t){if(this.focus||!t)return;this.flight&&(this.flight.kill(),this.flight=null,this.flying=!1);'
+    'let F=Math.tan(this.camera.fov*Math.PI/360)*2,c=Math.max(t.sprite.scale.x/(.5*F*this.camera.aspect),t.sprite.scale.y/(.48*F)),G=this.zzGlide;'
+    'this.zzGlide={node:t,dist:c,v:G?.v??new J,dv:G?.dv??0,p:G?.p??this.nav.target.clone(),q:G?.q??this.nav.dist},this.nav.stop()}'
+    # One step of the glide, run each frame before the controls place the camera.
+    'zzGlideStep(e){let G=this.zzGlide;if(!G)return;if(this.nav.drag||this.nav.pinch||this.focus||this.flying){this.zzGlide=null;return}'
+    # The aim point and distance ease toward the work first (0.15s), so every move starts on a soft S-curve.
+    'let t=G.node,T=t.rest.clone().addScaledVector(new J(0,1,0).applyQuaternion(this.nav.q),t.sprite.scale.y*.56),s=1-Math.exp(-e/.15);'
+    'G.p.lerp(T,s),G.q+=(G.dist-G.q)*s;let A=G.p.clone().sub(this.nav.target),k=24,c=2*Math.sqrt(k),D=G.q-this.nav.dist;'
+    'G.v.addScaledVector(A,k*e).multiplyScalar(Math.max(0,1-c*e)),this.nav.target.addScaledVector(G.v,e),'
+    'G.dv=(G.dv+k*D*e)*Math.max(0,1-c*e),this.nav.dist+=G.dv*e;'
+        # Done once it is within the card's own gentle float (about 0.3) and nearly still; the free camera takes over.
+    'T.distanceToSquared(this.nav.target)<.09&&G.v.lengthSq()<.25&&Math.abs(G.dist-this.nav.dist)<.1&&Math.abs(G.dv)<.1&&(this.zzGlide=null)}'
     'dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)')
+sub('this.flying||this.nav.update(e);', 'this.flying||(this.zzGlideStep(e),this.nav.update(e));')
+# A glide counts as motion: full frame rate on phones until it settles.
+sub('if((this.el.clientWidth<700||this.zzLit)&&!this.flying&&!this.nav.drag', 'if((this.el.clientWidth<700||this.zzLit)&&!this.flying&&!this.zzGlide&&!this.nav.drag')
 sub('onAngle:e=>{t.current&&(t.current.w4=e)}', 'onAngle:e=>{t.current&&(window.innerWidth<700?t.current.zzStep(e):t.current.w4=e)}')
 
 open(OUT, 'w').write(s)
