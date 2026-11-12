@@ -48,6 +48,10 @@ for d in json.load(open(f'{PORT}/src/playground-images.json')):
         title, year = m.group(1), int(m.group(2))
     meta[f"pg-{d['id']}"] = {'title': title, 'year': year}
 
+# The Marianopolis ArtsFest poster moved here from Works (2026-11-12): the whole poster, at its own shape.
+EXTRA = {'artsfest': {'title': 'ArtsFest poster', 'year': 2024}}
+meta.update(EXTRA)
+
 entries = [f'{k}:{v}' for k, v in kept.items()]
 entries += [f'"{k}":{obj(v)}' for k, v in meta.items()]
 s = s[:ug_start] + 'Ug={' + ','.join(entries) + '}' + s[ug_end:]
@@ -62,7 +66,9 @@ s = s[:wg_start] + 'Wg={' + ','.join(f'{k}:{tl(bodies[k])}' for k in KEEP if k i
 ORDER = ['pg-16', 'w01', 'pg-07', 'pg-06', 'pg-25', 'w02', 'pg-11', 'pg-24', 'w03', 'pg-12',
          'pg-02', 'w05', 'pg-23', 'pg-18', 'pg-34', 'w13', 'pg-21', 'pg-01', 'pg-04', 'w16',
          'pg-26', 'pg-09', 'pg-29', 'w20', 'pg-15', 'pg-05', 'pg-35', 'w31', 'pg-17', 'pg-08',
-         'pg-32', 'w33', 'pg-30', 'pg-13', 'pg-22']
+         'pg-32', 'w33', 'pg-30', 'pg-13', 'pg-22',
+         # Added last so every earlier piece keeps its place in the lattice.
+         'artsfest']
 assert len(ORDER) == len(set(ORDER)) == len(KEEP) + len(meta)
 assert set(ORDER) == set(KEEP) | set(meta)
 for k in ORDER:
@@ -115,14 +121,6 @@ CASES = [
      'href': P['prism']['link'], 'external': True,
      # The portfolio gives Prism no accent; purple, after its cover.
      'color': '#8f5bff'},
-    # ArtsFest stays in this site's own case window with its short text.
-    {'id': 'artsfest', 'img': 'cases/artsfest/artsfest-thumb.webp', 'hero': 'cases/artsfest/artsfest-1.webp', 'color': P['artsfest']['accent'],
-     'title': 'ArtsFest', 'year': 2024, 'desc': 'One poster for a whole festival',
-     'body': '\n\n'.join([
-         'For Marianopolis’ ArtsFest convention, I designed the poster that welcomed the whole school into the event.',
-         'Getting the energy of the day into a single graphic was the challenge, and the fun.',
-         'Client: ArtsFest, an arts festival. Timeline: 3 weeks. Role: lead designer.',
-     ])},
 ]
 for c in CASES:
     for k in ('img', 'hero', 'video'):
