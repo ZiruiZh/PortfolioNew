@@ -59,11 +59,82 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;600;700&family=Chivo+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <script>/* Sandboxed previews and embeds block browser storage; fall back to memory so the page still starts. */(function(){function m(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}["localStorage","sessionStorage"].forEach(function(n){try{window[n].getItem("_")}catch(e){try{Object.defineProperty(window,n,{value:m(),configurable:true})}catch(_){}}})})();</script>
-    <script type="module" src="./work/case-embed.js?v=1794471748"></script>
-    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794471748"></script>
+    <script type="module" src="./work/case-embed.js?v=1794493715"></script>
+    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794493715"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-C-HYMxcf.css">
   </head>
   <body>
+<div id="zz-loader" role="progressbar" aria-label="Loading Zirui Zhao" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+  <canvas class="zl-glyphs" aria-hidden="true"></canvas>
+  <p class="zl-text"><span>Zirui Zhao</span><span class="zl-pct">0%</span></p>
+</div>
+<style>
+  /* The loading screen: a row of the 3D view's own pixel loops (the favicon's crosses in the middle) on Info's light ground. */
+  #zz-loader{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+    background:#f7f7f5;color:#141414;font:400 13px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.01em;
+    transition:opacity .6s cubic-bezier(.22,1,.36,1),visibility 0s linear .6s}
+  #zz-loader.is-done{opacity:0;visibility:hidden;pointer-events:none}
+  #zz-loader .zl-glyphs{display:block;image-rendering:pixelated;transition:transform .6s cubic-bezier(.22,1,.36,1)}
+  #zz-loader.is-done .zl-glyphs{transform:scale(1.08)}
+  #zz-loader .zl-text{display:flex;gap:10px;margin:0;-webkit-text-stroke-width:.3px}
+  #zz-loader .zl-pct{min-width:4ch;color:#9b9b9b;font-variant-numeric:tabular-nums}
+</style>
+<script>
+  (function () {
+    var root = document.getElementById('zz-loader'), canvas = root.querySelector('canvas'), label = root.querySelector('.zl-pct');
+    var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var N = 16, GLYPHS = 5;
+    var cell = innerWidth < 480 ? 3 : 4, gap = cell * 5, size = N * cell;
+    var width = GLYPHS * size + (GLYPHS - 1) * gap, dpr = Math.min(2, devicePixelRatio || 1);
+    canvas.width = width * dpr; canvas.height = size * dpr;
+    canvas.style.width = width + 'px'; canvas.style.height = size + 'px';
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    function cross(put, x, y, c) { for (var a = -1; a <= 1; a++) { put(x + a, y, c); put(x, y + a, c); } }
+    // Five of the scene's eight-frame pixel loops, drawn on its 16 x 16 grid.
+    var LOOPS = [
+      function (put, t, c) { var r = t % 4; for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) { var o = Math.floor(Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)) / 2); if (o <= r) put(x, y, c[o % c.length]); } },
+      function (put, t, c) { var r = [0, 1, 2, 4, 5, 4, 2, 1][t], i; for (i = -r; i <= r; i++) { put(7 + i, 7, c[0]); put(7, 7 + i, c[0]); } if (t % 2) for (i = 1; i <= Math.ceil(r / 2); i++) { put(7 + i, 7 + i, c[1]); put(7 - i, 7 - i, c[1]); put(7 + i, 7 - i, c[1]); put(7 - i, 7 + i, c[1]); } },
+      function (put, t, c) { var r = 2 + [0, 1, 2, 3, 3, 2, 1, 0][t]; [[7, 7 - r], [7 + r, 7], [7, 7 + r], [7 - r, 7]].forEach(function (q, i) { cross(put, q[0], q[1], c[(i + t) % c.length]); }); put(7, 7, c[(t + 2) % c.length]); },
+      function (put, t, c) { for (var i = 0, n = 10 + t * 9; i < n; i++) { var a = i * .32, d = .4 + i * .085; put(Math.round(7.5 + Math.cos(a) * d), Math.round(7.5 + Math.sin(a) * d), c[i % 3 === 0 ? 1 : 0]); } },
+      function (put, t, c) { for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) { var d = Math.hypot(x - 7.5, y - 7.5), o = Math.round(d / 2); if (Math.abs(d - o * 2) < .6 && o <= 4 && o > 0) put(x, y, (o + 8 - t) % 4 === 0 ? c[1] : c[o % 2 ? 0 : 2]); } }
+    ];
+    var COLOURS = [['#12a9e8', '#fccc0a', '#ff1a3c'], ['#ff5cf0', '#fccc0a'], ['#ff1a3c', '#12a9e8', '#fccc0a'], ['#2b40d0', '#ff6a13'], ['#00cc99', '#ff1a3c', '#12a9e8']];
+    var tick = 0, born = performance.now();
+    function draw() {
+      ctx.clearRect(0, 0, width, size);
+      var age = performance.now() - born;
+      for (var g = 0; g < GLYPHS; g++) {
+        // They arrive one after another, from the middle out.
+        var order = Math.abs(g - 2);
+        if (!still && age < order * 110) continue;
+        var left = g * (size + gap);
+        LOOPS[g](function (x, y, c) {
+          if (x < 0 || y < 0 || x >= N || y >= N) return;
+          ctx.fillStyle = c; ctx.fillRect(left + x * cell, y * cell, cell, cell);
+        }, still ? 3 : (tick + g * 2) % 8, COLOURS[g]);
+      }
+    }
+    draw();
+    var timer = still ? 0 : setInterval(function () { tick++; draw(); }, 125); // eight frames a second, like the scene
+    var shown = 0;
+    window.zzLoader = {
+      set: function (p) {
+        p = Math.max(shown, Math.min(100, Math.round(p)));
+        if (p === shown) return;
+        shown = p; label.textContent = p + '%'; root.setAttribute('aria-valuenow', p);
+      },
+      done: function () {
+        if (root.classList.contains('is-done')) return;
+        this.set(100);
+        root.classList.add('is-done');
+        setTimeout(function () { clearInterval(timer); root.remove(); }, 700);
+      }
+    };
+    // Never stuck: whatever happens, the page shows within twelve seconds.
+    setTimeout(function () { window.zzLoader.done(); }, 12000);
+  })();
+</script>
     <div id="root"></div>
   </body>
 </html>

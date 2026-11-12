@@ -175,8 +175,9 @@ document.addEventListener('pointerdown', event => {
   const el = event.target.closest?.('[data-zz]');
   if (el) squish(el);
 });
-['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, event => {
-  if (event.type === 'pointercancel') document.querySelectorAll('[data-zz]').forEach(release);
+// A press that turns into a swipe gets no click, so the circle lets go on its own shortly after the finger.
+['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, () => {
+  setTimeout(() => document.querySelectorAll('[data-zz]').forEach(release), type === 'pointerup' ? 100 : 0);
 }));
 document.addEventListener('click', event => {
   const el = event.target.closest?.('[data-zz]');

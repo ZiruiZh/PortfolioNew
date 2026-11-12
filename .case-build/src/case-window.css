@@ -66,6 +66,8 @@
   html body .cards .sg-stack :is(.card,.sg-scroll){overscroll-behavior:auto!important}
   /* Outside Info the cards are only faded out; they mustn't keep catching touches meant for the 3D view. */
   html body .cards:not(.is-open) .sg-stack,html body .cards:not(.is-open) .sg-stack *{pointer-events:none!important}
+  /* The column scrolls up and down itself and leaves sideways swipes to info-swipe.js (swipe left for Works). */
+  html body .cards .sg-stack{touch-action:pan-y pinch-zoom}
 }
 @media (max-width:370px){
   .zz-topright{right:10px}
@@ -108,3 +110,12 @@ html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter)
 html body .cards.cards>:is(.corner-bl,.corner-br){font-size:13px!important}
 html body .cards.cards>:is(.corner-bl,.corner-br) :is(span,a){font-size:inherit!important}
 @media (max-width:640px){html body .cards.cards>:is(.corner-bl,.corner-br){font-size:14px!important}}
+
+/* Lite mode on Info: a saved loop of the scene (work/perf.js) stands in for the live view, inside its dimmed layer. */
+.zz-bgvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none;transition:opacity .6s cubic-bezier(.22,1,.36,1)}
+.zz-bgvid.is-on{opacity:1;pointer-events:auto}
+
+/* A case study scrolls inside its own frame: the frame stays put below the nav (the window's own margins), and
+   the study scrolls within its rounded edges instead of sliding up under the nav. */
+.cs-scroll:has(> .cs-sheet.cs-case){overflow:hidden}
+.cs-scroll > .cs-sheet.cs-case{box-sizing:border-box;height:100%;overflow:hidden auto;overscroll-behavior:contain;scrollbar-width:thin}

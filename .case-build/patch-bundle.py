@@ -147,8 +147,8 @@ sub('open(e){let t=this.activeNodes().find(t=>t.work===e);',
 # The list buttons and the window's previous/next do the same.
 sub('P=(0,l.useCallback)(e=>{s(null),t.current?.open(e),a(e)},[])',
     'P=(0,l.useCallback)(e=>{if(e?.external){zzGo(e);return}s(null),t.current?.open(e),a(e)},[])')
-# #works and #info in the address open those views.
-sub('[h,g]=(0,l.useState)(`playground`)', '[h,g]=(0,l.useState)(()=>location.hash===`#works`?`works`:`playground`)')
+# #works and #playground in the address open those views; Works is where a first click off Info goes.
+sub('[h,g]=(0,l.useState)(`playground`)', '[h,g]=(0,l.useState)(()=>location.hash===`#playground`?`playground`:`works`)')
 sub('let F=(e,n)=>{n&&g(n),a(null),s(null),u(e),t.current?.close(),t.current?.goArea(e)};',
     'let F=(e,n)=>{n&&g(n),a(null),s(null),u(e),t.current?.close(),t.current?.goArea(e)};'
     # The Info page is where visitors land, unless the address asks for #playground or #works.
@@ -173,8 +173,8 @@ new_card = ('a=new Image,W=e;a.onload=()=>{let e=this.el.clientWidth<700?720:128
     'v.setAttribute(`muted`,``),v.setAttribute(`playsinline`,``);'
     # Redraws at most ~30 times a second, and only while Works is showing.
     'let L=0,f=()=>{let T=performance.now();v.readyState>=2&&this.mix.v>.02&&T-L>(this.el.clientWidth<700?66:32)&&(L=T,p(v),u.needsUpdate=!0),v.requestVideoFrameCallback?v.requestVideoFrameCallback(f):setTimeout(f,40)};f();'
-    # Only plays while Works is showing and the tab is visible; it loads the first time it is needed.
-    'setInterval(()=>{this.mode===`works`&&!document.hidden?(v.getAttribute(`src`)||(v.src=`./${W.video}`),v.paused&&v.play().catch(()=>{})):v.paused||v.pause()},400)}'
+    # Only plays while Works is showing and the tab is visible (never in lite mode); it loads the first time it is needed.
+    'setInterval(()=>{this.mode===`works`&&!document.hidden&&!window.zzLite?(v.getAttribute(`src`)||(v.src=`./${W.video}`),v.paused&&v.play().catch(()=>{})):v.paused||v.pause()},400)}'
     '},a.src=`./${W.img}`')
 s = s[:c0] + new_card + s[c1:]
 
@@ -224,9 +224,10 @@ sub('className:`bul bul-z2`,children:', 'className:`bul bul-z2`,role:`button`,ta
 
 # ---- 12. Works view: project colours on the cursor, and Zeen front and centre --------------
 sub('colorOf(e){return this.colors.get(e)??`#ffffff`}', 'colorOf(e){return e?.color??this.colors.get(e)??`#ffffff`}')
-# The first work (Zeen) takes the large spot in the middle of the view; the rest sit smaller around it.
+# The first work (Zeen) takes the large spot in the middle of the view; the rest sit smaller around it, drawn
+# 20% closer in toward it (so they overlap a little at the corners, Zeen in front).
 sub('bigSpot(e,t){let n=[[-18,1.5,-7],[8,-11.5,6],[23,6,-19],[-8,12,-30],[30,-8,-36],[-30,-9,-24]],',
-    'bigSpot(e,t){let n=[[0,-7,10],[-26,10,-10],[26,10,-10],[24,-19,-8],[30,-8,-36],[-30,-9,-24]],')
+    'bigSpot(e,t){let n=[[0,-7,10],[-20.8,6.6,-6],[20.8,6.6,-6],[19.2,-16.6,-4.4],[24,-7.2,-26.8],[-24,-8.6,-17.2]],')
 sub('bigSize(e){return[.82,1,.78,.7,.75,.72][e%6]}', 'bigSize(e){return[1.1,.78,.74,.68,.75,.72][e%6]}')
 
 # ---- 13. The UW CS webring after the x.com handle, bottom right -----------------------------
@@ -255,10 +256,15 @@ sub('children:`Dark`},`d`)]}),(0,$.jsxs)(`div`,{...m(`e8040b71c573`),className:`
 # Draw the 3D scene at no more than 1.5x the screen's resolution (it was up to 1.75x).
 sub('this.renderer.setPixelRatio(i?.5:Math.min(window.devicePixelRatio,r?1.5:1.75))',
     'this.renderer.setPixelRatio(i?.5:Math.min(window.devicePixelRatio,r?1.25:1.5))')
-# While a window is open over a landed camera, the dimmed scene behind it draws every third frame.
+# While a case study or pop-up is open over a landed camera, the scene behind it stops drawing once its dimming
+# has settled (0.7s): the last frame stays on screen, still. Its clock is held too, so nothing jumps on closing.
+# A resize clears the canvas, so one frame is drawn then.
 sub('loop=()=>{if(this.disposed)return;this.raf=requestAnimationFrame(this.loop);',
     'loop=()=>{if(this.disposed)return;this.raf=requestAnimationFrame(this.loop);'
-    'if(this.focus&&!this.flying&&document.querySelector(`.case.is-open`)&&(this.zzSkip=((this.zzSkip||0)+1)%3))return;'
+    # Lite mode on Info: a saved loop of the scene plays instead (work/perf.js sets zzHold), so nothing is drawn.
+    'if(this.zzHold&&!this.flying&&!this.zzDirty){this.clock.elapsedTime-=this.clock.getDelta();return}'
+    'if(this.focus&&!this.flying&&document.querySelector(`.case.is-open`)){let T=performance.now();this.zzOpenAt||=T;'
+    'if(T-this.zzOpenAt>700&&!this.zzDirty){this.clock.elapsedTime-=this.clock.getDelta();return}}else this.zzOpenAt=0;this.zzDirty=!1;'
     # On phones the scene idles at half rate (every other frame) until it is touched, dragged or flying.
     'if(this.el.clientWidth<700&&!this.flying&&!this.nav.drag&&!this.nav.pinch&&!this.grab.active&&(this.zzHalf=!this.zzHalf))return;')
 
@@ -286,6 +292,87 @@ sub('this.glyphs=new Pg(r?200:420,r_)', 'this.glyphs=new Pg(r?140:320,r_)')
 TOUCH_GAIN = 2.5
 sub('let t=e.clientX-this.drag.x,n=e.clientY-this.drag.y;',
     f'let k=e.pointerType===`touch`?{TOUCH_GAIN}:1,t=(e.clientX-this.drag.x)*k,n=(e.clientY-this.drag.y)*k;')
+
+# ---- 22. Info panels on phones: a faint tilt, and flat again when the finger lifts ------------------
+# The panels lean toward the pointer (up to 14 degrees, lifting 5%). On phones that was a touch point that
+# stayed put after the finger left, so a panel sat tilted. There the lean is 15% as strong, and a lifted or
+# scrolling finger lets the panels settle flat.
+PHONE_TILT = .15
+sub('T=e=>{b=e.clientX,x=e.clientY},E=()=>{b=-1e4,x=-1e4};window.addEventListener(`pointermove`,T),document.addEventListener(`pointerleave`,E);let D=()=>{',
+    'T=e=>{b=e.clientX,x=e.clientY},E=()=>{b=-1e4,x=-1e4},zzU=e=>{e.pointerType!==`mouse`&&E()},zzP=matchMedia(`(max-width: 640px)`);'
+    'window.addEventListener(`pointermove`,T),document.addEventListener(`pointerleave`,E),window.addEventListener(`pointerup`,zzU),window.addEventListener(`pointercancel`,zzU);'
+    f'let D=()=>{{let zzK=zzP.matches?{PHONE_TILT}:1;')
+sub('o.ry+=(i*14-o.ry)*.1,o.rx+=(-a*12-o.rx)*.1,', 'o.ry+=(i*14*zzK-o.ry)*.1,o.rx+=(-a*12*zzK-o.rx)*.1,')
+sub('o.lift+=(+!!s-o.lift)*.14,', 'o.lift+=(+!!s*zzK-o.lift)*.14,')
+sub('cancelAnimationFrame(S),window.removeEventListener(`pointermove`,T),document.removeEventListener(`pointerleave`,E),',
+    'cancelAnimationFrame(S),window.removeEventListener(`pointermove`,T),document.removeEventListener(`pointerleave`,E),window.removeEventListener(`pointerup`,zzU),window.removeEventListener(`pointercancel`,zzU),')
+
+# ---- 23. The scene is reachable as window.zzScene (performance checks, lite mode, the phone dial) ----
+sub('constructor(e,t,n){this.el=e,this.ev=t,this.reduced=n;', 'constructor(e,t,n){this.el=e,this.ev=t,this.reduced=n,window.zzScene=this;')
+
+# ---- 24. Equivalent savings (the audit's Category A): same pixels, less work --------------------------
+sub('resize=()=>{let e=this.el.clientWidth,', 'resize=()=>{this.zzDirty=!0;let e=this.el.clientWidth,')
+# The environment-map generator and its source room are freed once the map exists (the map itself stays).
+sub('let a=new zf(this.renderer);this.scene.environment=a.fromScene(new hg,.04).texture,',
+    'let a=new zf(this.renderer),zzRoom=new hg;this.scene.environment=a.fromScene(zzRoom,.04).texture,a.dispose(),zzRoom.dispose(),')
+# Route and card-link lines rewrote their points by creating two new GPU buffers per line each update (about 900
+# a second). zzLine writes the same numbers, computed the same way, into the buffers they already have.
+sub('t_=5,n_=8,r_=70,',
+    'zzLine=window.zzLine=(L,l)=>{let g=L.geometry,S=g.attributes.instanceStart,E=g.attributes.instanceDistanceStart,n=l.length-3;'
+    'if(!S||!E||S.data.array.length!==2*n||E.data.array.length!==2*S.count){g.setPositions(l),L.computeLineDistances();return}'
+    'let p=S.data.array;for(let i=0;i<n;i+=3)p[2*i]=l[i],p[2*i+1]=l[i+1],p[2*i+2]=l[i+2],p[2*i+3]=l[i+3],p[2*i+4]=l[i+4],p[2*i+5]=l[i+5];'
+    'S.data.needsUpdate=!0,g.computeBoundingBox(),g.computeBoundingSphere();'
+    'let D=new Float32Array(2*S.count),o=g.attributes.instanceEnd;'
+    'for(let i=0,j=0,c=S.count;i<c;i++,j+=2){let x=S.getX(i)-o.getX(i),y=S.getY(i)-o.getY(i),z=S.getZ(i)-o.getZ(i);D[j]=j===0?0:D[j-1],D[j+1]=D[j]+Math.sqrt(x*x+y*y+z*z)}'
+    'E.data.array.set(D),E.data.needsUpdate=!0},t_=5,n_=8,r_=70,')
+sub('a.line.geometry.setPositions(l),a.line.computeLineDistances()}', 'zzLine(a.line,l)}')
+sub('p.line.geometry.setPositions(_),p.thin.geometry.setPositions(v),p.line.computeLineDistances(),p.thin.computeLineDistances();',
+    'zzLine(p.line,_),zzLine(p.thin,v);')
+# The camera's look-ahead point was rebuilt for every work on every frame; it is the same for all of them.
+sub('this.nodes.forEach((r,i)=>{let a=+(r===this.hovered||r===this.grab.node||r===this.focus);',
+    'let zzAhead=this.camera.position.clone().add(new J(0,0,-18).applyQuaternion(this.camera.quaternion));this.nodes.forEach((r,i)=>{let a=+(r===this.hovered||r===this.grab.node||r===this.focus);')
+sub('let p=this.camera.position.clone().add(new J(0,0,-18).applyQuaternion(this.camera.quaternion)),m=', 'let p=zzAhead,m=')
+# updateTiles built a text key of every position each frame that nothing reads.
+sub("t=``,n=this.w4,r=Math.cos(n)", "n=this.w4,r=Math.cos(n)")
+sub("if(s===this.grab.node||s===this.focus){t+=`g`;continue}", "if(s===this.grab.node||s===this.focus)continue;")
+sub("u+a_*Math.round((e.z-u)/a_)),t+=s.rest.x+`,`+s.rest.y+`,`+s.rest.z+`;`}return t}", "u+a_*Math.round((e.z-u)/a_))}}")
+sub('new J,this.big.forEach(', 'this.big.forEach(')
+
+# ---- 25. Lite mode for slow devices (work/perf.js decides; window.zzLite) ----------------------------
+# zzLighten: 1x resolution, no glitch pass, 2 in 5 of the floating pixel loops, a sparser lattice; then (below)
+# half-rate idling and slower route redraws. Built light from the start when perf.js already knows.
+sub('dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)',
+    'zzLighten(){if(this.zzLit)return;this.zzLit=!0;'
+    'let p=Math.min(this.renderer.getPixelRatio(),1);this.renderer.setPixelRatio(p),this.composer.setPixelRatio(p),this.resize(),this.zzDirty=!0;'
+    'this.glitch.enabled=!1;'
+    'let g=this.glyphs;g.items=g.items.filter((e,i)=>i%5<2||(g.group.remove(e.s),e.s.material.dispose(),!1));'
+    'let o=this.scene.children.find(e=>e.material===this.latMat),u=this.latMat.uniforms.uInk.value.clone();'
+    'this.latMat=this.buildLattice(),this.latMat.uniforms.uInk.value.copy(u),o&&(this.scene.remove(o),o.geometry.dispose(),o.material.dispose())}'
+    'dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)')
+sub('o.addEventListener(`pointerleave`,()=>{this.pointer.x=-1e4}),this.loop()}buildLattice(){',
+    'o.addEventListener(`pointerleave`,()=>{this.pointer.x=-1e4}),window.zzLite&&this.zzLighten(),this.loop()}buildLattice(){')
+sub('let l=i();if(i()<.55)continue;', 'let l=i();if(i()<(this.zzLit?.8:.55))continue;')
+sub('if(this.el.clientWidth<700&&!this.flying&&!this.nav.drag', 'if((this.el.clientWidth<700||this.zzLit)&&!this.flying&&!this.nav.drag')
+sub('(this.frameN=(this.frameN+1)%2)==0&&this.updateRoutes(t,n)', '(this.frameN=(this.frameN+1)%(this.zzLit?4:2))==0&&this.updateRoutes(t,n)')
+
+# ---- 26. Phones: the dial steps from work to work ---------------------------------------------------
+# On a phone the right-edge dial no longer turns the lattice: every 4 ticks moves to the next (finger up) or
+# previous work in the current view (Works' four, or Playground's pieces), and the camera glides to centre it.
+sub('dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)',
+    'zzStep(e){let k=Math.round(e/(v_*Math.PI/180)/4);if(this.zzK===void 0){this.zzK=k;return}if(this.zzMode!==this.mode)this.zzMode=this.mode,this.zzI=-1;'
+    'let d=k-this.zzK;if(!d)return;this.zzK=k;let L=this.activeNodes(),n=L.length;if(!n)return;'
+    'this.zzI=((this.zzI+d)%n+n)%n,this.zzCenter(L[this.zzI])}'
+    # The glide stops where the work fills about 60% of the screen, and re-aims at its live position every frame,
+    # so a piece that drifts on the way still lands centred.
+    'zzCenter(t){if(this.focus||!t)return;this.flight?.kill();'
+    'let n=this.camera.position.clone(),r=this.camera.quaternion.clone(),i=new J(0,1,0).applyQuaternion(r),'
+    'o=n.clone().sub(t.rest).normalize(),F=Math.tan(this.camera.fov*Math.PI/360)*2,c=Math.max(t.sprite.scale.x/(.62*F*this.camera.aspect),t.sprite.scale.y/(.6*F)),a=new J,l=new J,u=new Go,M=new ms,'
+    'aim=()=>{a.copy(t.rest).addScaledVector(i,t.sprite.scale.y*.56),l.copy(a).addScaledVector(o,c),u.setFromRotationMatrix(M.lookAt(l,a,i))};'
+    'this.flying=!0,this.nav.stop();let d={t:0};'
+    'this.flight=Mi.to(d,{t:1,duration:this.reduced?.01:.7,ease:`power3.out`,onUpdate:()=>{aim(),this.camera.position.lerpVectors(n,l,d.t),this.camera.quaternion.copy(r).slerp(u,d.t)},'
+    'onComplete:()=>{aim(),this.nav.setFrom(l.clone(),a.clone()),this.flying=!1}})}'
+    'dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)')
+sub('onAngle:e=>{t.current&&(t.current.w4=e)}', 'onAngle:e=>{t.current&&(window.innerWidth<700?t.current.zzStep(e):t.current.w4=e)}')
 
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
@@ -345,5 +432,10 @@ assert '--' not in art
 DOCTYPE = '<!doctype html>\n'
 assert html.startswith(DOCTYPE)
 html = DOCTYPE + '<!--\n\n' + art + '\n\n-->\n' + html[len(DOCTYPE):]
+# The loading screen paints before any script loads (src/loader.html); work/perf.js lifts it.
+loader = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'loader.html')).read().strip()
+BODY = '<body>'
+assert html.count(BODY) == 1
+html = html.replace(BODY, BODY + '\n' + loader, 1)
 open(f'{SITE}/index.html', 'w').write(html)
 print('ok', len(s))
