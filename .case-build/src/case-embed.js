@@ -5,6 +5,7 @@ import { installCaseStudy } from './case-study.js';
 import { setProjectMedia } from './projects.js';
 import './z-clicks.js';
 import './recruiter-prefetch.js';
+import './favicon.js';
 
 const style = document.createElement('style');
 style.dataset.zzCase = '';
