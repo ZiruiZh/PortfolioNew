@@ -1,0 +1,54 @@
+/* The case study content dressed like this site's case window (.tx): Helvetica, grey 12px labels,
+   17px body copy, large light headings, soft-cornered figures. prepare.mjs scopes every rule here
+   under .zz-case, and :root becomes .zz-case itself. Only looks change, never content or order. */
+:root{
+  --zz-sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --ink:#111;
+  --paper:transparent;
+  --muted:#9b9b9b;
+  --soft-line:#e6e6e6;
+  --surface:#f1f1ef;
+  --case-accent:#111;
+  --zz-body:#767676;
+  --case-text:var(--zz-body);
+  font-weight:400;
+  color:var(--ink);
+  background:transparent;
+}
+*{font-family:var(--zz-sans)!important}
+.project-page{--case-col:100%;--case-type:400 17px/1.6 var(--zz-sans);--case-text:var(--zz-body)}
+
+/* the window already shows the title and facts; the side index has no room in it */
+.case-rail{display:none}
+
+.case-notice{margin:clamp(28px,4vw,56px) 0 0;font-size:15px;line-height:1.5;letter-spacing:-.005em;color:#6b6b6b}
+.case-notice a{color:var(--ink);text-decoration:underline;text-decoration-color:currentColor;text-underline-offset:3px}
+.case-notice a:hover,.case-notice a:focus-visible{color:var(--route,var(--ink));text-decoration-color:var(--route,currentColor)}
+
+.case-hero{width:100%;margin:clamp(24px,3vw,40px) 0 0;background:transparent}
+.case-hero :is(img,video){border-radius:8px;background:var(--surface)}
+
+.case-section{margin-top:clamp(72px,9vw,128px);padding-top:0;border-top:0}
+.case-label{margin:0;font-size:12px;line-height:1.3;letter-spacing:0;color:var(--muted)}
+.case-label--inner{margin-top:56px}
+.case-heading{margin-top:14px;font:400 clamp(24px,2.4vw,34px)/1.15 var(--zz-sans);letter-spacing:-.02em;color:var(--ink)}
+.case-heading--major{margin-top:clamp(64px,8vw,104px);font-size:clamp(26px,3.2vw,46px);line-height:1.12}
+.case-subhead{margin-top:56px;font:400 clamp(22px,2vw,28px)/1.15 var(--zz-sans);letter-spacing:-.02em;color:var(--ink)}
+.case-text{font-size:17px;line-height:1.6;letter-spacing:0;color:var(--zz-body)}
+.case-text + .case-text{margin-top:1em}
+.case-term{font-size:17px;line-height:1.4;font-weight:500;letter-spacing:-.005em;color:var(--ink)}
+.case-term + .case-text{margin-top:4px}
+
+.case-figure a,.case-figure img,.case-card img,.case-clip,.case-clip video,.case-prototype{border-radius:8px}
+.case-figure a,.case-clip,.case-prototype{overflow:hidden}
+.case-figure>figcaption.case-text{margin-top:10px;font-size:12px;line-height:1.4;color:var(--muted)}
+.case-anim{border-radius:8px}
+
+.case-stat-value{font:400 clamp(40px,5vw,72px)/1 var(--zz-sans);letter-spacing:-.04em;color:var(--ink)}
+.case-stat-text{margin-top:8px;font-size:14px;line-height:1.45;color:var(--zz-body)}
+.case-note{font-size:12px;line-height:1.45;color:var(--muted)}
+
+.case-controls{top:10px;left:10px}
+.case-control{border:0;border-radius:999px;background:#fff;color:var(--ink)}
+.case-control:hover,.case-control:focus-visible{background:var(--route,var(--ink));color:#fff}
+.case-prototype-cta{padding:5px 12px;border-radius:999px;font-size:14px;line-height:1.2;font-weight:400;letter-spacing:0;color:#fff;background:var(--route,var(--ink))}

@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+# build tooling leftovers (.case-build/node_modules is a link to the portfolio's dependencies)
+.case-build/node_modules
+.case-build/dist
+.case-build/.check.mjs

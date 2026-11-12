@@ -1,0 +1,91 @@
+/* Rules for the site's own case window (not scoped). */
+
+/* A case study leads with its video, then its facts and title, then everything else. The renderer's
+   wrappers step aside (display:contents) so the hero can sit above the window's own title block. */
+.cs-case{display:flex;flex-direction:column}
+.cs-case .zz-mount,.cs-case .zz-case,.cs-case .zz-case>.project-page{display:contents}
+.cs-case>.cs-top{order:0}
+.cs-case .case-hero{order:1}
+.cs-case>.tx-head{order:2;margin-top:clamp(32px,4vw,56px)}
+.cs-case .case-notice{order:3}
+.cs-case .case-sections{order:4}
+.cs-case>.cs-next{order:5}
+.cs-case .tx-title{font-size:clamp(36px,4.6vw,72px);line-height:.95;letter-spacing:-.035em}
+/* A work window's title sits top left; its facts stand in a column on the right (stacked below on narrow screens). */
+.tx .tx-head{align-items:start}
+.tx .tx-head .tx-title{align-self:start;justify-self:start;text-align:left;margin-top:-.08em}
+.tx .tx-head .tx-meta{align-self:start;padding-bottom:0}
+@media (width>820px){
+  .tx .tx-head{grid-template-columns:minmax(0,9fr) minmax(180px,3fr)}
+  .tx .tx-head .tx-title{order:1}
+  .tx .tx-head .tx-meta{order:2}
+}
+
+/* In a work's window the cursor and highlights take the work's colour (--route is set by the window).
+   The site's cursor tints itself from the nearest --c. */
+.case:has(.cs-sheet:not(.cs-solo)){--c:var(--route)}
+.case:has(.cs-sheet:not(.cs-solo)) ::selection{background:color-mix(in srgb,var(--route) 55%,#fff);color:#111}
+
+/* Playground pieces show only their image. */
+.cs-solo .tx-figure{margin-top:clamp(24px,3vw,40px)}
+.cs-solo .tx-figure img{width:100%;height:auto;max-height:calc(100svh - 230px);object-fit:contain;background:transparent;border-radius:0!important}
+
+/* The Z circles on the Info name card are buttons; on touch screens their count floats above them. */
+.sg-zz [data-zz]{cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.sg-zz [data-zz]:focus-visible{outline:2px solid #111;outline-offset:3px}
+.zz-fx{position:fixed;z-index:2147483000;pointer-events:none}
+.zz-bubble{padding:6px 10px;border-radius:999px;font:500 13px/1 "Helvetica Neue",Helvetica,Arial,sans-serif;color:#0e0e0e;white-space:nowrap}
+
+/* The UW CS webring sits after the x.com handle in the bottom-right corner; the crest takes the text colour. */
+.zz-webring{display:inline-flex;align-items:center;justify-content:flex-end;gap:7px}
+.corner-br .zz-webring a{padding:1px 1px}
+.zz-crest{display:block;width:16px;height:15px;background:currentColor;-webkit-mask:url(assets/waterlooanimal.svg) center/contain no-repeat;mask:url(assets/waterlooanimal.svg) center/contain no-repeat}
+.corner-br .zz-crest-link:hover{box-shadow:none}
+.corner-br .zz-crest-link:hover .zz-crest{scale:1.15}
+.zz-crest{transition:scale .2s cubic-bezier(.34,1.56,.64,1)}
+
+/* Light / dark toggle: two words set like the nav. The current mode reads in full ink, the other in grey. */
+.theme-ico,.theme-ico:hover,.theme-ico:active{transform:none!important}
+.theme-ico{width:auto!important;height:auto!important;top:15px!important;right:16px!important;display:flex!important;gap:10px;align-items:center;font:400 13px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;cursor:pointer}
+.theme-ico .tt-opt{padding:2px 0}
+
+/* Recruiter mode sits left of Light / Dark; together they make the top-right group. */
+.zz-topright{position:absolute;top:15px;right:16px;z-index:6;display:flex;align-items:center;gap:16px;pointer-events:auto;transition:opacity .3s}
+.cards.case-open .zz-topright{opacity:0;pointer-events:none}
+.zz-topright .theme-ico{position:static!important;top:auto!important;right:auto!important}
+.zz-recruiter{padding:2px 0;font:400 13px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;text-decoration:none;white-space:nowrap}
+
+/* On narrow screens the top-right group drops to its own row under the nav, clear of Info / Playground / Works. */
+@media (max-width:640px){.zz-topright{top:48px;right:14px;gap:14px}}
+
+/* Cool mode's home text reads a touch heavier: a hairline outline thickens every weight evenly.
+   Case study windows keep their own weight. */
+.cards,.zc,.zz-bubble{-webkit-text-stroke-width:.3px}
+.cards .case{-webkit-text-stroke-width:0}
+
+/* Resume: its down-right arrow turns to point up-right on hover. */
+.sg-exit svg{rotate:0deg;transition:transform .35s cubic-bezier(.34,1.56,.64,1),rotate .35s cubic-bezier(.34,1.56,.64,1)}
+.sg-exit:hover svg,.sg-exit:focus-visible svg{rotate:-90deg}
+
+/* Things I like: the arrow beside the caption steps to the next photo. */
+.sg.sg-piccard .sg-picarrow{cursor:pointer;pointer-events:auto}
+.sg.sg-piccard .sg-picarrow:hover,.sg.sg-piccard .sg-picarrow:focus-visible{transform:translate(4px)}
+.sg.sg-piccard .sg-picarrow:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+
+/* The floating text over the 3D view (nav, Recruiter mode and Light / Dark, the two bottom corners) blends by
+   difference: white type that reads black over light areas and white over dark ones. The card layer stops
+   isolating its contents so they can blend with the canvas; each floating group keeps its old place above
+   case windows with its own z-index. Its letters sit 1% further apart. */
+html body .cards.cards{z-index:auto!important}
+html body .cards.cards>:is(.c-nav,.zz-topright,.corner-bl,.corner-br){z-index:9!important;mix-blend-mode:difference;color:#fff!important;text-shadow:none!important;background:none!important}
+html body .cards.cards>:is(.c-nav,.zz-topright,.corner-bl,.corner-br) *{color:#fff!important;text-shadow:none!important;letter-spacing:.01em!important}
+html body .cards.cards>.c-nav svg,html body .cards.cards>.c-nav svg *{fill:currentColor}
+html body .cards.cards>.c-nav svg [fill=none]{fill:none}
+html body .cards.cards>:is(.corner-bl,.corner-br) :is(span,a):not(.zz-crest){background:none!important}
+html body .cards.cards .zz-crest{background:#fff!important}
+
+/* Every floating word has the same white difference fill; words that aren't the current view or theme are
+   dimmed with opacity, and come up to full strength on hover. */
+html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter){opacity:.45!important;text-decoration:none!important;transition:opacity .2s ease-out!important}
+html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill.is-on,.tt-opt.is-on),
+html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter):is(:hover,:focus-visible){opacity:1!important}

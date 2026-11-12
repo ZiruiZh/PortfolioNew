@@ -1,0 +1,27 @@
+// Pure layout rules for the work tab, kept free of DOM and Vite imports for tests.
+
+// Section labels become anchor ids for the case study rail.
+export function slugify(label) {
+  return String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+export function parseRatio(ratio) {
+  const [width, height = 1] = String(ratio).split('/').map(Number);
+  return width / height;
+}
+
+// Case studies sit in two equal columns until phones stack them.
+export function featureColumns(viewportWidth) {
+  return viewportWidth > 600 ? 2 : 1;
+}
+
+// Each item joins the shortest column; near-ties go left so the first row reads in order.
+export function distributeColumns(heights, count, tolerance = 1) {
+  const columns = Array.from({ length: Math.max(1, count) }, () => ({ items: [], height: 0 }));
+  heights.forEach((height, index) => {
+    const target = columns.reduce((best, column) => column.height < best.height - tolerance ? column : best);
+    target.items.push(index);
+    target.height += height;
+  });
+  return columns.map(column => column.items);
+}
