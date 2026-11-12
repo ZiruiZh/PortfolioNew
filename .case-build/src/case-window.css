@@ -103,3 +103,8 @@ html body .cards.cards .zz-crest{background:#fff!important}
 html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter){opacity:.45!important;text-decoration:none!important;transition:opacity .2s ease-out!important}
 html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill.is-on,.tt-opt.is-on),
 html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter):is(:hover,:focus-visible){opacity:1!important}
+
+/* The footer corners set their text at the top bar's size: 13px, 14px on phones like the nav. */
+html body .cards.cards>:is(.corner-bl,.corner-br){font-size:13px!important}
+html body .cards.cards>:is(.corner-bl,.corner-br) :is(span,a){font-size:inherit!important}
+@media (max-width:640px){html body .cards.cards>:is(.corner-bl,.corner-br){font-size:14px!important}}

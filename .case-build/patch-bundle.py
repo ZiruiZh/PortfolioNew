@@ -338,5 +338,12 @@ html = html.replace(FONTS, FONTS.replace('rel="stylesheet" />', 'rel="stylesheet
 TAB = '<title>Zirui Zhao · Lattice of Works</title>'
 assert html.count(TAB) == 1
 html = html.replace(TAB, '<title>Zirui Zhao</title>')
+# An easter egg for whoever opens the page source: plus icons around "you found me!" (easter-egg.py).
+import subprocess
+art = subprocess.check_output(['python3', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'easter-egg.py')], text=True).rstrip('\n')
+assert '--' not in art
+DOCTYPE = '<!doctype html>\n'
+assert html.startswith(DOCTYPE)
+html = DOCTYPE + '<!--\n\n' + art + '\n\n-->\n' + html[len(DOCTYPE):]
 open(f'{SITE}/index.html', 'w').write(html)
 print('ok', len(s))
