@@ -55,7 +55,8 @@ function build(node, key) {
       <div class="case-sections" id="case-sections"></div>
     </div>`;
   node.replaceChildren(scope);
-  const study = installCaseStudy({ reducedQuery });
+  // The opening video follows only the reader's reduced-motion setting: it autoplays even in lite mode.
+  const study = installCaseStudy({ reducedQuery, heroQuery: motionQuery });
   study.render(key);
   study.setMode('project');
   current = { node, key, study, scope };
@@ -72,15 +73,15 @@ function build(node, key) {
       sheet.scrollBy({ top: event.deltaY * (event.deltaMode === 1 ? 16 : 1), behavior: 'instant' });
     }, { passive: false });
   }
-  // Still loading its opening picture or video after 2.5s: this one holds its videos on their posters (they can
-  // still be played), and the rest of this visit's case studies open still.
+  // Still loading its opening picture or video after 2.5s: the videos further down hold on their posters (they can
+  // still be played), and the rest of this visit's case studies open still. The opening video keeps playing.
   if (!reducedQuery.matches) setTimeout(() => {
     if (current?.scope !== scope) return;
     const hero = scope.querySelector('#case-hero video, #case-hero img');
     const ready = !hero || (hero.tagName === 'VIDEO' ? hero.readyState >= 3 : hero.complete && hero.naturalWidth > 0);
     if (ready) return;
     slowCases = true;
-    scope.querySelectorAll('video').forEach(video => { video.dataset.held = '1'; video.pause(); });
+    scope.querySelectorAll('#case-sections video').forEach(video => { video.dataset.held = '1'; video.pause(); });
   }, SLOW_CASE_MS);
 }
 

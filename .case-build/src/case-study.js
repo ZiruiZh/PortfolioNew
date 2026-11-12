@@ -210,7 +210,7 @@ function sectionBlock(project, section, autoplay) {
   return node;
 }
 
-export function installCaseStudy({ reducedQuery }) {
+export function installCaseStudy({ reducedQuery, heroQuery = reducedQuery }) {
   const page = document.getElementById('project');
   // Every case study closes on the same information as the work page.
   const info = document.getElementById('work-info').cloneNode(true);
@@ -340,7 +340,7 @@ export function installCaseStudy({ reducedQuery }) {
     const autoplay = !reducedQuery.matches && !navigator.connection?.saveData;
     sceneStops.forEach(stop => stop());
     sceneStops.clear();
-    document.getElementById('case-hero').replaceChildren(...hero(project, autoplay));
+    document.getElementById('case-hero').replaceChildren(...hero(project, !heroQuery.matches && !navigator.connection?.saveData));
 
     // A fact can name several people, and they stand in a column of their own.
     document.getElementById('case-meta').replaceChildren(...Object.entries(project.metadata).map(([label, value]) =>
