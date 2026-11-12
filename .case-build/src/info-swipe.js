@@ -13,78 +13,14 @@
 // the left and the right column a scroll to the right, the two moving apart one to one. Past 160px they slide
 // off and Works opens; let go short of that and they spring back.
 
+import { rubber, give, unrubber, spring, glide, tick } from './motion.js';
+
 const phone = matchMedia('(max-width: 640px)');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
 const SLOP = 8;          // px a finger moves before the drag picks a direction
 const PULL = 64;         // px the panels travel, on screen, before a pull pops (about 140px of finger)
-const RUBBER = 0.55;     // UIScrollView's rubber-band constant
 const span = () => Math.min(innerHeight * 0.4, 340);
-
-// UIScrollView's rubber band: the panels follow at 0.55x at first, then less and less.
-const rubber = (d, s) => Math.sign(d) * (1 - 1 / ((Math.abs(d) * RUBBER) / s + 1)) * s;
-// How fast the stretch moves for each px/s of finger at a pull of d: the band hands on less and less of it.
-const give = (d, s) => RUBBER / (((Math.abs(d) * RUBBER) / s + 1) ** 2);
-// The finger distance that gives a stretch of d (to pick a panel back up mid-spring).
-const unrubber = (d, s) => Math.sign(d) * Math.abs(d) / (RUBBER * (1 - Math.min(0.95, Math.abs(d) / s)));
-
-// A damped spring (stiffness k, damping ratio z, unit mass), stepped every frame from the finger's velocity.
-// onFrame can return true to end it early.
-function spring(from, to, velocity, { k = 320, z = 1 }, onFrame, onRest) {
-  let x = from, v = velocity, last = performance.now(), id = 0;
-  const c = 2 * z * Math.sqrt(k);
-  const step = now => {
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    for (let n = Math.max(1, Math.ceil(dt / 0.004)), h = dt / n, i = 0; i < n; i++) {
-      v += (-k * (x - to) - c * v) * h;
-      x += v * h;
-    }
-    const done = Math.abs(x - to) < 0.5 && Math.abs(v) < 20;
-    if (onFrame(done ? to : x) === true || done) onRest?.();
-    else id = requestAnimationFrame(step);
-  };
-  id = requestAnimationFrame(step);
-  return () => cancelAnimationFrame(id);
-}
-
-// iOS-style momentum (deceleration rate 0.998 per ms), for the rare drag this code scrolls itself.
-function glide(el, velocity, onRest) {
-  let v = velocity, last = performance.now(), id = 0;
-  const step = now => {
-    const ms = Math.min(50, now - last);
-    last = now;
-    v *= Math.pow(0.998, ms);
-    const before = el.scrollTop;
-    el.scrollTop = before + (v * ms) / 1000;
-    if (Math.abs(v) < 12 || el.scrollTop === before) onRest?.();
-    else id = requestAnimationFrame(step);
-  };
-  id = requestAnimationFrame(step);
-  return () => cancelAnimationFrame(id);
-}
-
-// A light tick as a pull pops: navigator.vibrate where there is one (Android). On iPhones, toggling a hidden
-// switch control plays the system's selection tick (Safari 18 and later; earlier ones stay silent).
-const apple = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-function tick() {
-  try {
-    // Chrome allows vibration only once the page has had a tap.
-    if (navigator.vibrate) { if (navigator.userActivation?.hasBeenActive !== false) navigator.vibrate(8); return; }
-    if (!apple) return;
-    const label = document.createElement('label');
-    label.setAttribute('aria-hidden', 'true');
-    label.style.display = 'none';
-    label.addEventListener('click', event => event.stopPropagation());
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.setAttribute('switch', '');
-    label.append(input);
-    document.head.append(label);
-    label.click();
-    label.remove();
-  } catch {}
-}
 
 const showWorks = () => document.querySelector('.c-nav [data-showcase="nav-works"]')?.click();
 

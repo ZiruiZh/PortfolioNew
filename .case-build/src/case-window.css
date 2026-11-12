@@ -119,6 +119,11 @@ html body .cards.cards>:is(.corner-bl,.corner-br) :is(span,a){font-size:inherit!
    the study scrolls within its rounded edges instead of sliding up under the nav. */
 .cs-scroll:has(> .cs-sheet.cs-case){overflow:hidden}
 .cs-scroll > .cs-sheet.cs-case{box-sizing:border-box;height:100%;overflow:hidden auto;overscroll-behavior:contain;scrollbar-width:thin}
+/* ...and that frame reaches down to the bottom of the screen: a sheet risen from the bottom edge, rounded only at
+   its top corners, with the study scrolling out past the edge. (Its open and close moves keep that bottom edge at or
+   below the screen's the whole way.) Playground pop-ups stay as centred cards. */
+.cs-scroll:has(> .cs-sheet.cs-case){padding-bottom:0}
+html body .cs-scroll > .cs-sheet.cs-case{border-bottom-left-radius:0!important;border-bottom-right-radius:0!important;padding-bottom:calc(clamp(20px,4vw,56px) + env(safe-area-inset-bottom,0px))}
 
 /* The dial's centre bar keeps one size, with round ends, like Apple's pickers: the needle, the cursor when it snaps onto the dial,
    and the bar passing through the centre on the dial's canvas (which reads these two values) all match.
