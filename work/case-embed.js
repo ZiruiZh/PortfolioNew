@@ -665,8 +665,22 @@ const tr=`
 .zz-topright .theme-ico{position:static!important;top:auto!important;right:auto!important}
 .zz-recruiter{padding:2px 0;font:400 13px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;text-decoration:none;white-space:nowrap}
 
-/* On narrow screens the top-right group drops to its own row under the nav, clear of Info / Playground / Works. */
-@media (max-width:640px){.zz-topright{top:48px;right:14px;gap:14px}}
+/* On phones Recruiter mode shares the nav's row and size; Light / Dark (Playground and Works only) sits just below. */
+@media (max-width:640px){
+  .zz-topright{top:20px;right:14px;flex-direction:column;align-items:flex-end;gap:4px}
+  .zz-recruiter,.theme-ico{font-size:14px!important}
+  /* The Info cards scroll in their own column on phones; the column has to take the touch, not just the cards. */
+  html body .cards.is-open .sg-stack{pointer-events:auto}
+  /* Each card keeps its own scrolling to itself (overscroll-behavior: contain), which on phones, where the cards
+     don't scroll, swallowed every swipe. Here a swipe on a card passes through to the column. */
+  html body .cards .sg-stack :is(.card,.sg-scroll){overscroll-behavior:auto!important}
+  /* Outside Info the cards are only faded out; they mustn't keep catching touches meant for the 3D view. */
+  html body .cards:not(.is-open) .sg-stack,html body .cards:not(.is-open) .sg-stack *{pointer-events:none!important}
+}
+@media (max-width:370px){
+  .zz-topright{right:10px}
+  .zz-recruiter,.theme-ico{font-size:13px!important}
+}
 
 /* Cool mode's home text reads a touch heavier: a hairline outline thickens every weight evenly.
    Case study windows keep their own weight. */

@@ -6,6 +6,7 @@ ln -sfn /Users/ziruizhao/Documents/PersonalPortfolioWebsite/node_modules node_mo
 node prepare.mjs
 node node_modules/vite/bin/vite.js build --config vite.config.mjs
 rm -rf "$SITE/work" && mkdir -p "$SITE/work" && cp -R dist/. "$SITE/work/"
+bash "$HERE/make-thumbs.sh"
 python3 patch-bundle.py
 # Refuse to leave a broken page behind: the patched bundle must parse.
 cp "$SITE/assets/index-DnZOTAZ6.js" "$HERE/.check.mjs" && node --check "$HERE/.check.mjs" && rm "$HERE/.check.mjs"

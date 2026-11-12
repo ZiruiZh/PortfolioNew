@@ -71,7 +71,7 @@ for k in ORDER:
 old_gg = ('Gg=Array.from({length:35},(e,t)=>{let n=`w${String(t+1).padStart(2,`0`)}`;'
           'return{id:n,img:`works/${n}.webp`,body:Wg[n],...Ug[n]??{title:`Untitled`}}})')
 assert s.count(old_gg) == 1
-new_gg = ('Gg=[' + ','.join(tl(k) for k in ORDER) + '].map(n=>({id:n,img:`works/${n}.webp`,'
+new_gg = ('Gg=[' + ','.join(tl(k) for k in ORDER) + '].map(n=>({id:n,img:`works/${n}.webp`,thumb:`works/thumbs/${n}.webp`,'
           'body:Wg[n],...Ug[n]??{title:`Untitled`}}))')
 s = s.replace(old_gg, new_gg)
 
@@ -162,7 +162,7 @@ old_card = s[c0:c1]
 assert 'r.drawImage(a,(a.width-c)/2,(a.height-l)/2,c,l,14,14,e,720)' in old_card
 rr = 'o=(e,t,n,i,a)=>{r.beginPath(),r.moveTo(e+a,t),r.arcTo(e+n,t,e+n,t+i,a),r.arcTo(e+n,t+i,e,t+i,a),r.arcTo(e,t+i,e,t,a),r.arcTo(e,t,e+n,t,a),r.closePath()}'
 assert rr in old_card
-new_card = ('a=new Image,W=e;a.onload=()=>{let e=1280,H=Math.round(e/(W.ratio||16/9)),t=document.createElement(`canvas`);'
+new_card = ('a=new Image,W=e;a.onload=()=>{let e=this.el.clientWidth<700?720:1280,H=Math.round(e/(W.ratio||16/9)),t=document.createElement(`canvas`);'
     't.width=e+28,t.height=H+28;let r=t.getContext(`2d`),' + rr + ','
     'p=a=>{let w=a.videoWidth||a.naturalWidth,h=a.videoHeight||a.naturalHeight;if(!w||!h)return;'
     'r.clearRect(0,0,t.width,t.height),r.fillStyle=`#ffffff`,o(0,0,t.width,t.height,26),r.fill(),r.save(),o(14,14,e,H,19),r.clip();'
@@ -172,7 +172,7 @@ new_card = ('a=new Image,W=e;a.onload=()=>{let e=1280,H=Math.round(e/(W.ratio||1
     'if(W.video){let v=document.createElement(`video`);v.muted=!0,v.loop=!0,v.playsInline=!0,v.preload=`none`,'
     'v.setAttribute(`muted`,``),v.setAttribute(`playsinline`,``);'
     # Redraws at most ~30 times a second, and only while Works is showing.
-    'let L=0,f=()=>{let T=performance.now();v.readyState>=2&&this.mix.v>.02&&T-L>32&&(L=T,p(v),u.needsUpdate=!0),v.requestVideoFrameCallback?v.requestVideoFrameCallback(f):setTimeout(f,40)};f();'
+    'let L=0,f=()=>{let T=performance.now();v.readyState>=2&&this.mix.v>.02&&T-L>(this.el.clientWidth<700?66:32)&&(L=T,p(v),u.needsUpdate=!0),v.requestVideoFrameCallback?v.requestVideoFrameCallback(f):setTimeout(f,40)};f();'
     # Only plays while Works is showing and the tab is visible; it loads the first time it is needed.
     'setInterval(()=>{this.mode===`works`&&!document.hidden?(v.getAttribute(`src`)||(v.src=`./${W.video}`),v.paused&&v.play().catch(()=>{})):v.paused||v.pause()},400)}'
     '},a.src=`./${W.img}`')
@@ -254,11 +254,13 @@ sub('children:`Dark`},`d`)]}),(0,$.jsxs)(`div`,{...m(`e8040b71c573`),className:`
 # ---- 16. Smoother: a lighter render ---------------------------------------------------------
 # Draw the 3D scene at no more than 1.5x the screen's resolution (it was up to 1.75x).
 sub('this.renderer.setPixelRatio(i?.5:Math.min(window.devicePixelRatio,r?1.5:1.75))',
-    'this.renderer.setPixelRatio(i?.5:Math.min(window.devicePixelRatio,1.5))')
+    'this.renderer.setPixelRatio(i?.5:Math.min(window.devicePixelRatio,r?1.25:1.5))')
 # While a window is open over a landed camera, the dimmed scene behind it draws every third frame.
 sub('loop=()=>{if(this.disposed)return;this.raf=requestAnimationFrame(this.loop);',
     'loop=()=>{if(this.disposed)return;this.raf=requestAnimationFrame(this.loop);'
-    'if(this.focus&&!this.flying&&document.querySelector(`.case.is-open`)&&(this.zzSkip=((this.zzSkip||0)+1)%3))return;')
+    'if(this.focus&&!this.flying&&document.querySelector(`.case.is-open`)&&(this.zzSkip=((this.zzSkip||0)+1)%3))return;'
+    # On phones the scene idles at half rate (every other frame) until it is touched, dragged or flying.
+    'if(this.el.clientWidth<700&&!this.flying&&!this.nav.drag&&!this.nav.pinch&&!this.grab.active&&(this.zzHalf=!this.zzHalf))return;')
 
 # ---- 17. Things I like: the arrow beside the caption is a "next photo" button ------------------
 sub('className:`sg-picarrow`,"aria-hidden":`true`,children:',
@@ -275,6 +277,10 @@ sub('this.flight=Mi.to(d,{t:1,duration:this.reduced?.01:1.3,ease:`power3.inOut`'
     'this.flight=Mi.to(d,{t:1,duration:this.reduced?.01:1.05,ease:`power3.inOut`')
 sub('!f&&d.t>.7&&(f=!0,this.ev.onOpen(e))', '!f&&d.t>.97&&(f=!0,this.ev.onOpen(e))')
 
+# ---- 20. Lighter: thumbnails for lattice textures, fewer pixel loops --------------------------
+sub('c.src=`./${r.img}`,o.userData.node=s', 'c.src=`./${r.thumb||r.img}`,o.userData.node=s')
+sub('this.glyphs=new Pg(r?200:420,r_)', 'this.glyphs=new Pg(r?140:320,r_)')
+
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
 open(CSS_OUT, 'w').write(css)
@@ -287,5 +293,40 @@ assert html.count(main_tag) == 1
 stamp = int(time.time())
 html = html.replace(main_tag, f'<script type="module" src="./work/case-embed.js?v={stamp}"></script>\n    '
                     + main_tag.replace('index-DnZOTAZ6.js', f'index-DnZOTAZ6.js?v={stamp}'))
+# Link previews: a looping video (og:video) for apps that play one, its poster as the image everywhere else.
+SITE_URL = 'https://www.zirui.ca'  # the address the site is served from; previews need absolute links
+TITLE = 'Zirui Zhao · Lattice of Works'
+DESCRIPTION = "Zirui Zhao's works floating in an endless, glitching lattice."
+IMAGE_ALT = "Zirui Zhao's works floating over a topographic lattice"
+og = f"""
+    <link rel="canonical" href="{SITE_URL}/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Zirui Zhao" />
+    <meta property="og:title" content="{TITLE}" />
+    <meta property="og:description" content="{DESCRIPTION}" />
+    <meta property="og:url" content="{SITE_URL}/" />
+    <meta property="og:image" content="{SITE_URL}/og/preview.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="{IMAGE_ALT}" />
+    <meta property="og:video" content="{SITE_URL}/og/preview.mp4" />
+    <meta property="og:video:secure_url" content="{SITE_URL}/og/preview.mp4" />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content="960" />
+    <meta property="og:video:height" content="586" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{TITLE}" />
+    <meta name="twitter:description" content="{DESCRIPTION}" />
+    <meta name="twitter:image" content="{SITE_URL}/og/preview.jpg" />
+    <meta name="twitter:image:alt" content="{IMAGE_ALT}" />"""
+desc_tag = f'<meta name="description" content="{DESCRIPTION}" />'
+assert html.count(desc_tag) == 1
+html = html.replace(desc_tag, desc_tag + og)
+for f in ('og/preview.jpg', 'og/preview.mp4'):
+    assert os.path.exists(f'{SITE}/{f}'), f
+FONTS = '<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;600;700&family=Chivo+Mono:wght@400&display=swap" rel="stylesheet" />'
+assert html.count(FONTS) == 1
+html = html.replace(FONTS, FONTS.replace('rel="stylesheet" />', 'rel="stylesheet" media="print" onload="this.media=\'all\'" />'))
 open(f'{SITE}/index.html', 'w').write(html)
 print('ok', len(s))
