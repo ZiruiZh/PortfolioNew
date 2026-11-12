@@ -59,76 +59,173 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;600;700&family=Chivo+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <script>/* Sandboxed previews and embeds block browser storage; fall back to memory so the page still starts. */(function(){function m(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}["localStorage","sessionStorage"].forEach(function(n){try{window[n].getItem("_")}catch(e){try{Object.defineProperty(window,n,{value:m(),configurable:true})}catch(_){}}})})();</script>
-    <script type="module" src="./work/case-embed.js?v=1794496279"></script>
-    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794496279"></script>
+    <script type="module" src="./work/case-embed.js?v=1794499904"></script>
+    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794499904"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-C-HYMxcf.css">
   </head>
   <body>
-<div id="zz-loader" role="progressbar" aria-label="Loading Zirui Zhao" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+<div id="zz-loader" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+  <canvas class="zl-sky" aria-hidden="true"></canvas>
   <canvas class="zl-glyphs" aria-hidden="true"></canvas>
-  <p class="zl-text"><span>Zirui Zhao</span><span class="zl-pct">0%</span></p>
 </div>
 <style>
-  /* The loading screen: a row of the 3D view's own pixel loops (the favicon's crosses in the middle) on Info's light ground. */
-  #zz-loader{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
-    background:#f7f7f5;color:#141414;font:400 13px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.01em;
+  /* The loading screen: the 3D view's own background (its contour-map sky, drawn by the same shader from Info's
+     camera, at Info's 70% over the same ground) and one grainy pixel loop in the middle, the favicon's crosses. */
+  #zz-loader{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;
+    background:#d8d8d4;color:#141414;font:500 14px/1 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.01em;
     transition:opacity .6s cubic-bezier(.22,1,.36,1),visibility 0s linear .6s}
-  #zz-loader.is-done{opacity:0;visibility:hidden;pointer-events:none}
-  #zz-loader .zl-glyphs{display:block;image-rendering:pixelated;transition:transform .6s cubic-bezier(.22,1,.36,1)}
-  #zz-loader.is-done .zl-glyphs{transform:scale(1.08)}
-  #zz-loader .zl-text{display:flex;gap:10px;margin:0;-webkit-text-stroke-width:.3px}
-  #zz-loader .zl-pct{min-width:4ch;color:#9b9b9b;font-variant-numeric:tabular-nums}
+  /* The hand-off: the pixel loop goes first, then the whole screen fades. Its background is the 3D
+     view's own, so what appears is only the scene's works, lattice and pixel loops arriving on it. */
+  #zz-loader.is-done{pointer-events:none}
+  #zz-loader.is-gone{opacity:0;visibility:hidden;transition:opacity 1.1s cubic-bezier(.4,0,.2,1),visibility 0s linear 1.1s}
+  #zz-loader .zl-sky{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.7}
+  #zz-loader .zl-glyphs{position:relative;display:block;image-rendering:pixelated;transition:transform .35s cubic-bezier(.5,0,.75,0),opacity .3s ease-in}
+  #zz-loader.is-done .zl-glyphs{transform:scale(.6);opacity:0}
 </style>
 <script>
   (function () {
-    var root = document.getElementById('zz-loader'), canvas = root.querySelector('canvas'), label = root.querySelector('.zl-pct');
+    var root = document.getElementById('zz-loader');
+    // The page is loading: the scene and the Info cards hold their entrances until the hand-off (work/perf.js,
+    // bundle section 29, case-window.css).
+    document.documentElement.classList.add('zz-booting');
+    var sky = root.querySelector('.zl-sky'), glyphs = root.querySelector('.zl-glyphs');
     var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var N = 16, GLYPHS = 5;
-    var cell = innerWidth < 480 ? 3 : 4, gap = cell * 5, size = N * cell;
-    var width = GLYPHS * size + (GLYPHS - 1) * gap, dpr = Math.min(2, devicePixelRatio || 1);
-    canvas.width = width * dpr; canvas.height = size * dpr;
-    canvas.style.width = width + 'px'; canvas.style.height = size + 'px';
-    var ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    function cross(put, x, y, c) { for (var a = -1; a <= 1; a++) { put(x + a, y, c); put(x, y + a, c); } }
-    // Five of the scene's eight-frame pixel loops, drawn on its 16 x 16 grid.
-    var LOOPS = [
-      function (put, t, c) { var r = t % 4; for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) { var o = Math.floor(Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)) / 2); if (o <= r) put(x, y, c[o % c.length]); } },
-      function (put, t, c) { var r = [0, 1, 2, 4, 5, 4, 2, 1][t], i; for (i = -r; i <= r; i++) { put(7 + i, 7, c[0]); put(7, 7 + i, c[0]); } if (t % 2) for (i = 1; i <= Math.ceil(r / 2); i++) { put(7 + i, 7 + i, c[1]); put(7 - i, 7 - i, c[1]); put(7 + i, 7 - i, c[1]); put(7 - i, 7 + i, c[1]); } },
-      function (put, t, c) { var r = 2 + [0, 1, 2, 3, 3, 2, 1, 0][t]; [[7, 7 - r], [7 + r, 7], [7, 7 + r], [7 - r, 7]].forEach(function (q, i) { cross(put, q[0], q[1], c[(i + t) % c.length]); }); put(7, 7, c[(t + 2) % c.length]); },
-      function (put, t, c) { for (var i = 0, n = 10 + t * 9; i < n; i++) { var a = i * .32, d = .4 + i * .085; put(Math.round(7.5 + Math.cos(a) * d), Math.round(7.5 + Math.sin(a) * d), c[i % 3 === 0 ? 1 : 0]); } },
-      function (put, t, c) { for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) { var d = Math.hypot(x - 7.5, y - 7.5), o = Math.round(d / 2); if (Math.abs(d - o * 2) < .6 && o <= 4 && o > 0) put(x, y, (o + 8 - t) % 4 === 0 ? c[1] : c[o % 2 ? 0 : 2]); } }
-    ];
-    var COLOURS = [['#12a9e8', '#fccc0a', '#ff1a3c'], ['#ff5cf0', '#fccc0a'], ['#ff1a3c', '#12a9e8', '#fccc0a'], ['#2b40d0', '#ff6a13'], ['#00cc99', '#ff1a3c', '#12a9e8']];
-    var tick = 0, born = performance.now();
-    function draw() {
-      ctx.clearRect(0, 0, width, size);
-      var age = performance.now() - born;
-      for (var g = 0; g < GLYPHS; g++) {
-        // They arrive one after another, from the middle out.
-        var order = Math.abs(g - 2);
-        if (!still && age < order * 110) continue;
-        var left = g * (size + gap);
-        LOOPS[g](function (x, y, c) {
-          if (x < 0 || y < 0 || x >= N || y >= N) return;
-          ctx.fillStyle = c; ctx.fillRect(left + x * cell, y * cell, cell, cell);
-        }, still ? 3 : (tick + g * 2) % 8, COLOURS[g]);
+    var dpr = Math.min(2, devicePixelRatio || 1);
+    var running = true;
+    // A small seeded random, so the grain is the same on every load.
+    function rng(seed) { var s = seed; return function () { s = s * 16807 % 2147483647; return (s - 1) / 2147483646; }; }
+
+    // ---- the 3D view's background: its sky shader, seen from Info's camera --------------------------------
+    // The same contour-map shader (simplex-noise terrain, contour lines every 1/22, every 5th darker, grain, specks,
+    // dust, film grain), looking from (6, 3, 30) toward the middle with the scene's field of view, so it lines up
+    // with the view the loader fades into. The five colour blooms the scene multiplies by zero are left out.
+    var born = performance.now();
+    var gl = sky.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: false });
+    var drawSky = function () {};
+    if (gl && gl.getExtension('OES_standard_derivatives')) (function () {
+      var NOISE = 'vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}' +
+        'float snoise(vec3 v){const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;i=mod289(i);' +
+        'vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));float n_=0.142857142857;vec3 ns=n_*D.wyz-D.xzx;vec4 j=p-49.0*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);' +
+        'vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);' +
+        'vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));}';
+      var VS = 'attribute vec2 p;varying vec2 v;void main(){v=p;gl_Position=vec4(p,0.0,1.0);}';
+      var FS = '#extension GL_OES_standard_derivatives : enable\nprecision highp float;varying vec2 v;uniform float uTime;uniform vec3 uR,uU,uF;uniform vec2 uView;' + NOISE +
+        'void main(){vec3 d=normalize(uF+uR*v.x*uView.x+uU*v.y*uView.y);float t=uTime;vec3 uBg=vec3(0.97,0.97,0.96),uInk=vec3(0.08);' +
+        'vec3 col=uBg*(0.9+0.2*(snoise(d*3.0+t*0.01)*0.5+0.5));' +
+        'float h=snoise(d*2.0+vec3(0.0,t*0.05,0.0))*0.6+snoise(d*4.3-vec3(t*0.04))*0.3;h+=snoise(d*38.0)*0.018+snoise(d*90.0)*0.008;' +
+        'float bands=h*22.0;float f=abs(fract(bands)-0.5);float w=fwidth(bands);float line=1.0-smoothstep(w*0.6,w*1.6,f);' +
+        'float major=1.0-step(0.5,abs(mod(floor(bands+0.5),5.0)));float grain=0.55+0.45*snoise(d*140.0+t*0.2);' +
+        'col=mix(col,uInk,line*(0.2+0.3*major)*grain);' +
+        'col=mix(col,uInk,0.05*smoothstep(0.6,1.0,snoise(d*260.0+t*0.3)));' +
+        'col=mix(col,uInk,0.18*smoothstep(0.97,1.0,snoise(vec3(d.xy*600.0,floor(t*12.0)))));' +
+        'col=mix(col,uInk,0.07*smoothstep(0.995,1.0,snoise(vec3(d.x*4.0,d.y*900.0,floor(t*6.0)))));' +
+        'float g=fract(sin(dot(gl_FragCoord.xy+t*37.0,vec2(12.9898,78.233)))*43758.5453);col+=(g-0.5)*0.09;' +
+        'gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);}';
+      function shader(type, src) { var sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null; }
+      var vs = shader(gl.VERTEX_SHADER, VS), fs = shader(gl.FRAGMENT_SHADER, FS);
+      if (!vs || !fs) return;
+      var prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+      gl.useProgram(prog);
+      var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      var loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      var U = function (n) { return gl.getUniformLocation(prog, n); };
+      var uTime = U('uTime'), uView = U('uView');
+      // Info's camera: from (6, 3, 30) toward the middle, world up.
+      var F = [-6, -3, -30], fl = Math.hypot(F[0], F[1], F[2]); F = [F[0] / fl, F[1] / fl, F[2] / fl];
+      var Rv = [F[1] * 0 - F[2] * 1, F[2] * 0 - F[0] * 0, F[0] * 1 - F[1] * 0], rl = Math.hypot(Rv[0], Rv[1], Rv[2]); Rv = [Rv[0] / rl, Rv[1] / rl, Rv[2] / rl];
+      var Uv = [Rv[1] * F[2] - Rv[2] * F[1], Rv[2] * F[0] - Rv[0] * F[2], Rv[0] * F[1] - Rv[1] * F[0]];
+      gl.uniform3fv(U('uF'), F); gl.uniform3fv(U('uR'), Rv); gl.uniform3fv(U('uU'), Uv);
+      function size() {
+        // The scene's own sharpness: 1.5x on wide screens, 1.25x on phones.
+        var r = Math.min(devicePixelRatio || 1, innerWidth < 700 ? 1.25 : 1.5);
+        sky.width = Math.round(innerWidth * r); sky.height = Math.round(innerHeight * r);
+        gl.viewport(0, 0, sky.width, sky.height);
+        var tanH = Math.tan((innerWidth < 700 ? 72 : 60) * Math.PI / 360);
+        gl.uniform2f(uView, tanH * innerWidth / innerHeight, tanH);
       }
+      size();
+      addEventListener('resize', size);
+      drawSky = function (ms) { gl.uniform1f(uTime, ms / 1000); gl.drawArrays(gl.TRIANGLES, 0, 3); };
+    })();
+    var skip = false;
+    function loop(now) {
+      if (!running) return;
+      requestAnimationFrame(loop);
+      if ((skip = !skip)) return; // about 30 frames a second
+      drawSky(now - born);
     }
-    draw();
-    var timer = still ? 0 : setInterval(function () { tick++; draw(); }, 125); // eight frames a second, like the scene
+    drawSky(0);
+    if (!still) requestAnimationFrame(loop);
+
+    // ---- the pixel loop, with the scene's grain ------------------------------------------------------------
+    var N = 16;
+    var cell = innerWidth < 480 ? 3 : 4, size = N * cell, width = size;
+    glyphs.width = width * dpr; glyphs.height = size * dpr;
+    glyphs.style.width = width + 'px'; glyphs.style.height = size + 'px';
+    var ctx = glyphs.getContext('2d');
+    ctx.scale(dpr, dpr);
+    // Grain, like the scene's pixel loops: per-pixel noise, coarser blotches, rare bright specks, worn edges.
+    var PW = glyphs.width, PH = glyphs.height, noise = new Float32Array(PW * PH), wear = new Float32Array(PW * PH);
+    (function () {
+      var r = rng(4242), bw = Math.ceil(PW / 6), blotch = new Float32Array(bw * Math.ceil(PH / 6));
+      for (var b = 0; b < blotch.length; b++) blotch[b] = r() - 0.5;
+      for (var y = 0; y < PH; y++) for (var x = 0; x < PW; x++) {
+        var k = y * PW + x;
+        noise[k] = (r() - 0.5) * 46 + blotch[Math.floor(y / 6) * bw + Math.floor(x / 6)] * 26 + (r() < 0.018 ? 70 : 0);
+        wear[k] = r();
+      }
+    })();
+    function texture() {
+      var img = ctx.getImageData(0, 0, PW, PH), d = img.data;
+      for (var y = 0; y < PH; y++) for (var x = 0; x < PW; x++) {
+        var k = y * PW + x, p = k * 4;
+        if (d[p + 3] < 8) continue;
+        var n = noise[k];
+        d[p] = Math.max(0, Math.min(255, d[p] + n)); d[p + 1] = Math.max(0, Math.min(255, d[p + 1] + n)); d[p + 2] = Math.max(0, Math.min(255, d[p + 2] + n));
+        var edge = (x > 0 && d[p - 1] < 8) || (x < PW - 1 && d[p + 7] < 8) || (y > 0 && d[p - PW * 4 + 3] < 8) || (y < PH - 1 && d[p + PW * 4 + 3] < 8);
+        if (edge && wear[k] < 0.35) d[p + 3] = Math.floor(d[p + 3] * (0.35 + wear[k]));
+        else if (wear[k] > 0.988) d[p + 3] = Math.floor(d[p + 3] * 0.5);
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+    function cross(put, x, y, c) { for (var a = -1; a <= 1; a++) { put(x + a, y, c); put(x, y + a, c); } }
+    // The scene's "crosses growing out" loop (the favicon): four crosses spread from a centre dot and fold back in,
+    // eight frames on its 16 x 16 grid.
+    function crosses(put, t, c) { var r = 2 + [0, 1, 2, 3, 3, 2, 1, 0][t]; [[7, 7 - r], [7 + r, 7], [7, 7 + r], [7 - r, 7]].forEach(function (q, i) { cross(put, q[0], q[1], c[(i + t) % c.length]); }); put(7, 7, c[(t + 2) % c.length]); }
+    var COLOURS = ['#ff1a3c', '#12a9e8', '#fccc0a'];
+    var tick = 0;
+    function drawGlyphs() {
+      ctx.clearRect(0, 0, width, size);
+      crosses(function (x, y, c) {
+        if (x < 0 || y < 0 || x >= N || y >= N) return;
+        ctx.fillStyle = c; ctx.fillRect(x * cell, y * cell, cell, cell);
+      }, still ? 3 : (tick + 4) % 8, COLOURS);
+      texture();
+    }
+    drawGlyphs();
+    var timer = still ? 0 : setInterval(function () { tick++; drawGlyphs(); }, 125); // eight frames a second, like the scene
+
+    // ---- progress: not shown, but kept for screen readers --------------------------------------------------
     var shown = 0;
     window.zzLoader = {
       set: function (p) {
         p = Math.max(shown, Math.min(100, Math.round(p)));
         if (p === shown) return;
-        shown = p; label.textContent = p + '%'; root.setAttribute('aria-valuenow', p);
+        shown = p; root.setAttribute('aria-valuenow', p);
       },
       done: function () {
         if (root.classList.contains('is-done')) return;
         this.set(100);
         root.classList.add('is-done');
-        setTimeout(function () { clearInterval(timer); root.remove(); }, 700);
+        // Once the loop is out, the scene and the cards make their entrance as the screen fades.
+        setTimeout(function () {
+          document.documentElement.classList.remove('zz-booting');
+          dispatchEvent(new Event('zz:booted'));
+          root.classList.add('is-gone');
+        }, still ? 0 : 300);
+        setTimeout(function () { running = false; clearInterval(timer); gl && gl.getExtension('WEBGL_lose_context') && gl.getExtension('WEBGL_lose_context').loseContext(); root.remove(); }, still ? 50 : 1500);
       }
     };
     // Never stuck: whatever happens, the page shows within twelve seconds.

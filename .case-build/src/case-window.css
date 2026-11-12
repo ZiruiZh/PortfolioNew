@@ -129,3 +129,16 @@ html body .dial .dial-needle,html body .dial:is(:hover,:focus-visible,.is-near,.
   width:var(--zz-bar-w)!important;height:var(--zz-bar-h)!important;margin-top:calc(var(--zz-bar-h) / -2)!important;border-radius:999px!important}
 html body .dial.is-tick .dial-needle{animation:none!important}
 html body .zc.is-line .zc-body{min-width:36px!important;width:36px!important;height:3px!important;top:-1.5px!important;left:-18px!important;border-radius:999px!important}
+
+/* The footer's time and links sit back at the nav's dimmed opacity (same fill, so the difference blend holds);
+   a link comes forward when pointed at or focused. "Montreal" stays as it is. */
+html body .cards.cards>.corner-bl .mono,
+html body .cards.cards>.corner-br a{opacity:.45;transition:opacity .2s}
+html body .cards.cards>.corner-br a:is(:hover,:focus-visible){opacity:1}
+
+/* While the loading screen is up (html.zz-booting) the Info cards wait off to the sides; when it lifts they slide in
+   on their usual transition, the right column a beat after the left. On phones the column rises in instead. */
+html.zz-booting body .cards .sg-col-l{translate:calc(-100% - 40px)}
+html.zz-booting body .cards .sg-col-r{translate:calc(100% + 40px)}
+html body .cards.is-open .sg-col-r{transition-delay:.07s}
+@media (max-width:640px){html.zz-booting body .cards .sg-stack{opacity:0;translate:0 30px}}

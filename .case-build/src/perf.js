@@ -141,8 +141,8 @@ const infoVideo = (() => {
     const S = window.zzScene;
     const info = !!document.querySelector('.cards.is-open');
     if (!S || !window.zzLite || !info || document.hidden) { hide(); return; }
-    // Wait for the works to settle into their cloud before swapping the live view for the loop.
-    if (S.cloud.v > 0.98 && !S.flying) show(S);
+    // Wait for the works to arrive and settle into their cloud before swapping the live view for the loop.
+    if (S.cloud.v > 0.98 && !S.flying && (S.zzIn ?? 1) > 0.999) show(S);
   }
   return {
     sync() {

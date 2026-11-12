@@ -112,7 +112,9 @@ def study(key, cover):
     }
 
 CASES = [
-    study('zeen', P['zeen']['card']['poster']),
+    # Zeen's card shows this still whenever its video isn't playing (lite mode, a slow connection, or before the video
+    # arrives): a frame of the cover you supplied, cropped clear of its dark border and the black corner element.
+    study('zeen', 'zeen-card-still.webp'),
     study('allot', P['allot']['card']['images'][0]),
     # Prism has no case study: the card opens its site in a new tab. Its video is drawn 2% larger from the left edge.
     {'id': 'prism', 'title': P['prism']['title'], 'year': int(P['prism']['year']),
@@ -147,6 +149,10 @@ sub('P=(0,l.useCallback)(e=>{s(null),t.current?.open(e),a(e)},[])',
     'P=(0,l.useCallback)(e=>{if(e?.external){zzGo(e);return}s(null),t.current?.open(e),a(e)},[])')
 # #works and #playground in the address open those views; Works is where a first click off Info goes.
 sub('[h,g]=(0,l.useState)(`playground`)', '[h,g]=(0,l.useState)(()=>location.hash===`#playground`?`playground`:`works`)')
+# The app starts in Info itself (unless the address asks for Works or Playground). Starting in the projects view for
+# a moment set the scene off on the Works overview flight, which landed after Info had opened and left Info looking
+# through the Works camera, close in.
+sub('[c,u]=(0,l.useState)(`projects`)', '[c,u]=(0,l.useState)(()=>/^#(works|playground)$/.test(location.hash)?`projects`:`info`)')
 sub('let F=(e,n)=>{n&&g(n),a(null),s(null),u(e),t.current?.close(),t.current?.goArea(e)};',
     'let F=(e,n)=>{n&&g(n),a(null),s(null),u(e),t.current?.close(),t.current?.goArea(e)};'
     # The Info page is where visitors land, unless the address asks for #playground or #works.
@@ -398,6 +404,40 @@ sub('p=(s?14:8)*(1+(.55+g*.9)*l)+g*2,m=f*(s?.85:.3+.35*l*g+.15*l),h=Math.max(-10
     # Round ends, drawn half a thickness in from each end so every bar keeps its exact length.
     'W=L+(Z.zzH-L)*q,N=P+(Z.zzW-P)*q,m=M+(.95-M)*q;a.strokeStyle=`rgba(${r},${m.toFixed(3)})`,a.lineWidth=W,a.lineCap=`round`,'
     'a.beginPath(),a.moveTo(o-N+W/2,t),a.lineTo(o-W/2,t),a.stroke()')
+
+# ---- 28. Info opens further back ----------------------------------------------------------------------
+# The works' cloud reaches about 24 units out; from 34 away it spilled off the screen. Info now sits 48 away
+# (58 on phones, whose narrow screens show less across). bg/info-*.mp4 (lite mode) are rendered from the same spots.
+INFO_DIST, INFO_DIST_PHONE = 48, 58
+# The cloud sits a little right of centre on wide screens, between the panels: 3.5 units (it was 4.5).
+sub('t=this.el.clientWidth>820?4.5:0', 't=this.el.clientWidth>820?3.5:0')
+sub('Mi.to(this.nav,{dist:34,duration:this.reduced?.01:1.4,ease:`power3.inOut`,overwrite:!0})',
+    f'Mi.to(this.nav,{{dist:this.el.clientWidth<700?{INFO_DIST_PHONE}:{INFO_DIST},duration:this.reduced?.01:1.4,ease:`power3.inOut`,overwrite:!0}})')
+
+# ---- 29. From the loading screen into the 3D view -----------------------------------------------------------
+# While the loading screen is up (<html class="zz-booting">, set by src/loader.html) the scene holds its entrance at
+# zzIn = 0. When the loader finishes it fires "zz:booted" and zzIn eases to 1 over 1.9s: the works come in from three
+# times further out, contracting into their cloud as they fade in, and the floating pixel loops grow from nothing
+# with a slight overshoot, each a little after the last.
+sub('constructor(e,t,n){this.el=e,this.ev=t,this.reduced=n,window.zzScene=this;',
+    'constructor(e,t,n){this.el=e,this.ev=t,this.reduced=n,window.zzScene=this;'
+    'this.zzIn=document.documentElement.classList.contains(`zz-booting`)?0:1;'
+    'addEventListener(`zz:booted`,()=>{Mi.to(this,{zzIn:1,duration:this.reduced?.01:1.9,ease:`power3.out`})},{once:!0});')
+sub('s.set(p*_*v,m*_*v,h*_*v).add(this.cloudCenter)', 's.set(p*_*v,m*_*v,h*_*v).multiplyScalar(1+2*(1-this.zzIn)**2).add(this.cloudCenter)')
+sub('r.sprite.material.opacity=(this.focus&&this.focus!==r?.3:1)*(r===this.focus||r===this.grab.node?1:h)*g',
+    'r.sprite.material.opacity=(this.focus&&this.focus!==r?.3:1)*(r===this.focus||r===this.grab.node?1:h)*g*Math.min(1,this.zzIn*1.5)')
+# Each pixel loop keeps its size (b) and a start offset (dl) taken from its place in the list, so no random draw moves.
+sub('this.items.push({s:i,p:s,ph:n()*6.28,sp:.2+n()*.6})', 'this.items.push({s:i,p:s,ph:n()*6.28,sp:.2+n()*.6,b:o,dl:this.items.length*.618%1*.55})')
+sub('for(let r of this.items)r.s.position.set(o(r.p.x+Math.sin(e*.2*r.sp+r.ph)*1.5*n,t.x),o(r.p.y+e*.25*r.sp*n,t.y),o(r.p.z+Math.cos(e*.17*r.sp+r.ph)*1.5*n,t.z))}}',
+    'let k=this.zzGrow??1;for(let r of this.items){r.s.position.set(o(r.p.x+Math.sin(e*.2*r.sp+r.ph)*1.5*n,t.x),o(r.p.y+e*.25*r.sp*n,t.y),o(r.p.z+Math.cos(e*.17*r.sp+r.ph)*1.5*n,t.z));'
+    'if(r.zg!==1){let q=Math.min(1,Math.max(0,(k-r.dl)/.45)),w=q<1?1+2.70158*(q-1)**3+1.70158*(q-1)**2:1;r.s.scale.set(r.b*w,r.b*w,1),r.zg=q<1?q:1}}}}')
+sub('this.glyphs.update(t,r,n)', '(this.glyphs.zzGrow=this.zzIn,this.glyphs.update(t,r,n))')
+# The Info cards' own entrance (sections rising, the name card unfolding) waits for the loader instead of playing
+# underneath it.
+sub('.to(s,{"--unf":`0deg`,duration:.3,ease:`sine.out`}));let l=new Map',
+    '.to(s,{"--unf":`0deg`,duration:.3,ease:`sine.out`}));'
+    'document.documentElement.classList.contains(`zz-booting`)&&(o.forEach(e=>e.pause(0)),addEventListener(`zz:booted`,()=>o.forEach(e=>e.restart(!0)),{once:!0}));'
+    'let l=new Map')
 
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
