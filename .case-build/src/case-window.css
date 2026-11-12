@@ -119,3 +119,13 @@ html body .cards.cards>:is(.corner-bl,.corner-br) :is(span,a){font-size:inherit!
    the study scrolls within its rounded edges instead of sliding up under the nav. */
 .cs-scroll:has(> .cs-sheet.cs-case){overflow:hidden}
 .cs-scroll > .cs-sheet.cs-case{box-sizing:border-box;height:100%;overflow:hidden auto;overscroll-behavior:contain;scrollbar-width:thin}
+
+/* The dial's centre bar keeps one size, with round ends, like Apple's pickers: the needle, the cursor when it snaps onto the dial,
+   and the bar passing through the centre on the dial's canvas (which reads these two values) all match.
+   Slimmer than before: 36 x 3px with a mouse (the snapped cursor was 42 x 4), 32 x 1.5px on touch. */
+.dial{--zz-bar-w:36px;--zz-bar-h:3px}
+@media (hover:none),(pointer:coarse){.dial{--zz-bar-w:32px;--zz-bar-h:1.5px}}
+html body .dial .dial-needle,html body .dial:is(:hover,:focus-visible,.is-near,.is-drag,.is-merged) .dial-needle{
+  width:var(--zz-bar-w)!important;height:var(--zz-bar-h)!important;margin-top:calc(var(--zz-bar-h) / -2)!important;border-radius:999px!important}
+html body .dial.is-tick .dial-needle{animation:none!important}
+html body .zc.is-line .zc-body{min-width:36px!important;width:36px!important;height:3px!important;top:-1.5px!important;left:-18px!important;border-radius:999px!important}

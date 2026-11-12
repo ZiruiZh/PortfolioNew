@@ -381,9 +381,23 @@ sub('this.flying||this.nav.update(e);', 'this.flying||(this.zzGlideStep(e),this.
 sub('if((this.el.clientWidth<700||this.zzLit)&&!this.flying&&!this.nav.drag', 'if((this.el.clientWidth<700||this.zzLit)&&!this.flying&&!this.zzGlide&&!this.nav.drag')
 sub('onAngle:e=>{t.current&&(t.current.w4=e)}', 'onAngle:e=>{t.current&&(window.innerWidth<700?t.current.zzStep(e):t.current.w4=e)}')
 
-# ---- 27. The dial's bars stay level ----------------------------------------------------------------
-# While scrolling, each bar's left end used to dip or rise with the scroll speed (up to 10px), tilting it.
-sub('h=Math.max(-10,Math.min(10,y*.9))*(.4+.6*l)', 'h=0')
+# ---- 27. The dial, like Apple's pickers ---------------------------------------------------------------
+# The bars stay level while scrolling (each bar's left end used to dip or rise with the speed, up to 10px). The bars
+# away from the centre sit further back (about half their old opacity), and a bar passing through the centre grows
+# into the centre bar itself: its length, thickness and opacity, easing over one bar's spacing either side. Every
+# bar has round ends. The
+# centre bar's size comes from --zz-bar-w / --zz-bar-h on .dial (case-window.css), read whenever the dial is sized.
+sub('x=()=>{let n=e.getBoundingClientRect(),r=Math.min(2,window.devicePixelRatio||1);',
+    'x=()=>{let zs=getComputedStyle(e);t.zzW=parseFloat(zs.getPropertyValue(`--zz-bar-w`))||32,t.zzH=parseFloat(zs.getPropertyValue(`--zz-bar-h`))||2;'
+    'let n=e.getBoundingClientRect(),r=Math.min(2,window.devicePixelRatio||1);')
+# Inside the drawing loop `t` is each bar's height, so the canvas is kept as Z first.
+sub('S=()=>{let e=t.width/Math.min(2,window.devicePixelRatio||1)', 'S=()=>{let Z=t,e=t.width/Math.min(2,window.devicePixelRatio||1)')
+sub('p=(s?14:8)*(1+(.55+g*.9)*l)+g*2,m=f*(s?.85:.3+.35*l*g+.15*l),h=Math.max(-10,Math.min(10,y*.9))*(.4+.6*l);'
+    'a.strokeStyle=`rgba(${r},${m.toFixed(3)})`,a.lineWidth=s?1.25:1,a.beginPath(),a.moveTo(o-p,t+h),a.lineTo(o,t),a.stroke()',
+    'k=Math.max(0,1-Math.abs(t-i)/__),q=k*k*(3-2*k),P=(s?14:8)*(1+(.3+g*.45)*l)+g*2,M=f*(s?.42:.13+.15*l*g+.07*l),L=s?1.25:1,'
+    # Round ends, drawn half a thickness in from each end so every bar keeps its exact length.
+    'W=L+(Z.zzH-L)*q,N=P+(Z.zzW-P)*q,m=M+(.95-M)*q;a.strokeStyle=`rgba(${r},${m.toFixed(3)})`,a.lineWidth=W,a.lineCap=`round`,'
+    'a.beginPath(),a.moveTo(o-N+W/2,t),a.lineTo(o-W/2,t),a.stroke()')
 
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
