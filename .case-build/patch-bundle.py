@@ -702,4 +702,17 @@ BODY = '<body>'
 assert html.count(BODY) == 1
 html = html.replace(BODY, BODY + '\n' + loader, 1)
 open(f'{SITE}/index.html', 'w').write(html)
+
+# ---- The unlisted icons page (showcase/), for a social post: five of the site's icons on its background ------------------
+# Built from src/showcase.html with the same loop code (shapes.js, tiles.js) and the loader's contour-sky shader, so it
+# draws exactly what the site draws. ?export=<url> renders it frame by frame for a video.
+SKY_START, SKY_END = "      var NOISE = ", "'gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);}';"
+raw_loader = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'loader.html')).read()
+assert raw_loader.count(SKY_START) == 1 and raw_loader.count(SKY_END) == 1
+sky_shader = raw_loader[raw_loader.index(SKY_START):raw_loader.index(SKY_END) + len(SKY_END)].strip()
+show = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'showcase.html')).read()
+assert show.count('/*ZZ_TILES*/') == 1 and show.count('/*ZZ_SKY_SHADER*/') == 1
+show = show.replace('/*ZZ_TILES*/', tiles).replace('/*ZZ_SKY_SHADER*/', sky_shader)
+os.makedirs(f'{SITE}/showcase', exist_ok=True)
+open(f'{SITE}/showcase/index.html', 'w').write(show)
 print('ok', len(s))

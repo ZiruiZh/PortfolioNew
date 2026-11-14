@@ -4,3 +4,5 @@ __pycache__/
 .case-build/node_modules
 .case-build/dist
 .case-build/.check.mjs
+# the icons video rendered from showcase/ (kept local, for posting)
+showcase/*.mp4

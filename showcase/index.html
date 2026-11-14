@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Zirui Zhao · Icons</title>
+<link rel="icon" href="../favicon.svg" />
+<style>
+  /* An unlisted page for a social post (2026-11-14): five of the site's animated icons in a row, on the site's
+     contour-map background (lighter here), in a 16:9 frame. It plays live here; ?export renders it frame by
+     frame for a video (see the end of the script). Built by patch-bundle.py from .case-build/src/showcase.html. */
+  html, body { margin: 0; height: 100%; background: #d8d8d4; }
+  body { display: grid; place-items: center; overflow: hidden; }
+  canvas { display: block; width: min(100vw, 100vh * 16 / 9); height: auto; aspect-ratio: 16 / 9; }
+</style>
+</head>
+<body>
+<canvas id="frame" width="1920" height="1080" aria-label="Five animated icons: an arrow, a globe, a heart, a switch and a plus"></canvas>
+<script>
+(function () {
+  var W = 1920, H = 1080, FPS = 24, SECONDS = 8;
+  var out = document.getElementById('frame'), ctx = out.getContext('2d');
+  function rng(seed) { var s = seed; return function () { s = s * 16807 % 2147483647; return (s - 1) / 2147483646; }; }
+
+  // ---- the site's background: its contour-map sky, as on the loading screen (from Info's camera), at 70% over the
+  // page's grey ------------------------------------------------------------------------------------------------------
+  var sky = document.createElement('canvas'); sky.width = W; sky.height = H;
+  var gl = sky.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: true });
+  var drawSky = function () {};
+  if (gl && gl.getExtension('OES_standard_derivatives')) (function () {
+    var NOISE = 'vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}' +
+        'float snoise(vec3 v){const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;i=mod289(i);' +
+        'vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));float n_=0.142857142857;vec3 ns=n_*D.wyz-D.xzx;vec4 j=p-49.0*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);' +
+        'vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);' +
+        'vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));}';
+      var VS = 'attribute vec2 p;varying vec2 v;void main(){v=p;gl_Position=vec4(p,0.0,1.0);}';
+      var FS = '#extension GL_OES_standard_derivatives : enable\nprecision highp float;varying vec2 v;uniform float uTime;uniform vec3 uR,uU,uF;uniform vec2 uView;' + NOISE +
+        'void main(){vec3 d=normalize(uF+uR*v.x*uView.x+uU*v.y*uView.y);float t=uTime;vec3 uBg=vec3(0.97,0.97,0.96),uInk=vec3(0.08);' +
+        'vec3 col=uBg*(0.9+0.2*(snoise(d*3.0+t*0.01)*0.5+0.5));' +
+        'float h=snoise(d*2.0+vec3(0.0,t*0.05,0.0))*0.6+snoise(d*4.3-vec3(t*0.04))*0.3;h+=snoise(d*38.0)*0.018+snoise(d*90.0)*0.008;' +
+        'float bands=h*22.0;float f=abs(fract(bands)-0.5);float w=fwidth(bands);float line=1.0-smoothstep(w*0.6,w*1.6,f);' +
+        'float major=1.0-step(0.5,abs(mod(floor(bands+0.5),5.0)));float grain=0.55+0.45*snoise(d*140.0+t*0.2);' +
+        'col=mix(col,uInk,line*(0.2+0.3*major)*grain);' +
+        'col=mix(col,uInk,0.05*smoothstep(0.6,1.0,snoise(d*260.0+t*0.3)));' +
+        'col=mix(col,uInk,0.18*smoothstep(0.97,1.0,snoise(vec3(d.xy*600.0,floor(t*12.0)))));' +
+        'col=mix(col,uInk,0.07*smoothstep(0.995,1.0,snoise(vec3(d.x*4.0,d.y*900.0,floor(t*6.0)))));' +
+        'float g=fract(sin(dot(gl_FragCoord.xy+t*37.0,vec2(12.9898,78.233)))*43758.5453);col+=(g-0.5)*0.09;' +
+        'gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);}';
+    function shader(type, src) { var sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null; }
+    var vs = shader(gl.VERTEX_SHADER, VS), fs = shader(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) return;
+    var prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+    gl.useProgram(prog);
+    var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    var U = function (n) { return gl.getUniformLocation(prog, n); };
+    var F = [-6, -3, -30], fl = Math.hypot(F[0], F[1], F[2]); F = [F[0] / fl, F[1] / fl, F[2] / fl];
+    var Rv = [-F[2], 0, F[0]], rl = Math.hypot(Rv[0], Rv[1], Rv[2]); Rv = [Rv[0] / rl, Rv[1] / rl, Rv[2] / rl];
+    var Uv = [Rv[1] * F[2] - Rv[2] * F[1], Rv[2] * F[0] - Rv[0] * F[2], Rv[0] * F[1] - Rv[1] * F[0]];
+    gl.uniform3fv(U('uF'), F); gl.uniform3fv(U('uR'), Rv); gl.uniform3fv(U('uU'), Uv);
+    gl.viewport(0, 0, W, H);
+    var tanH = Math.tan(60 * Math.PI / 360);
+    gl.uniform2f(U('uView'), tanH * W / H, tanH);
+    var uTime = U('uTime');
+    drawSky = function (seconds) { gl.uniform1f(uTime, seconds); gl.drawArrays(gl.TRIANGLES, 0, 3); };
+  })();
+
+  // ---- the icons: the site's own loops (shapes.js and tiles.js, the same code), roughed and grained as the 3D
+  // view draws them, shown pixel-sharp at one and a half times ------------------------------------------------------
+  var Tg = [];
+  var ZZ_ROUGH = 0.65; // edges a little less diffused than on the site (tiles.js)
+  // Smooth animated shapes (2026-11-14), after a second set of references: transit signage, Swiss posters, VHS sleeves
+// and flat colour pictograms. Bold, simple and brightly coloured. Shared by the 3D view's floating loops (tiles.js,
+// which roughs them up and grains them like the pixel tiles) and the loading screen (loader.html, which runs before
+// the site's own script), so both are inlined from here by patch-bundle.py.
+//
+// Each entry is [draw, colourways]. draw(c, t, way) paints frame t (0-7) of an eight-frame, one-second loop onto a
+// 128 x 128 square whose background (way[0]) is already filled. With only 8 frames a loop, the motions are ones that
+// read well in steps and join up seamlessly: turns by exactly one step of a shape's own symmetry, stripes and dashes
+// moving on by one period, waves, and eased nudges that come back to where they began.
+var zzShapes = (function () {
+  const K = '#141414', O = '#ff4f12', L = '#d8ff3c', U = '#8a4fff', N = '#0d5a36', T = '#33dcdc', S = '#f6d69c',
+    M = '#701c1c', E = '#1f2cff', Rd = '#ff2b1b', Gy = '#d9d9d3', Cy = '#c7f5f3',
+    G = '#18c64a', Y = '#ffe100', P = '#f8a0e6', W = '#ffffff', SIZE = 128, TAU = Math.PI * 2;
+  const disc = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); };
+  const rrect = (c, x, y, w, h, r) => {
+    c.beginPath(); c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  };
+  return [
+    // A signage arrow nudging out along its own direction and settling back.
+    [(c, t, [, a]) => {
+      const o = [0, 0, 3, 7, 9, 9, 6, 2][t];
+      c.translate(-o, -o);
+      c.fillStyle = c.strokeStyle = a;
+      c.fillRect(24, 24, 62, 24); c.fillRect(24, 24, 24, 62);
+      c.lineWidth = 24; c.beginPath(); c.moveTo(38, 38); c.lineTo(102, 102); c.stroke();
+    }, [[O, W], [K, W]]],
+    // A scalloped badge turning by one scallop a loop, a dot at its heart.
+    [(c, t, [, a, d]) => {
+      const n = 12, rot = t / 8 * TAU / n;
+      c.fillStyle = a;
+      disc(c, 64, 64, 40);
+      for (let i = 0; i < n; i++) { const th = rot + i / n * TAU; disc(c, 64 + Math.cos(th) * 42, 64 + Math.sin(th) * 42, 10); }
+      c.fillStyle = d; disc(c, 64, 64, 15);
+    }, [[K, O, W], [Gy, E, W]]],
+    // VHS sleeve stripes: diagonal bands thickening towards one side, sliding on by one band a loop.
+    [(c, t, [, a]) => {
+      const P = 18;
+      c.fillStyle = a;
+      c.translate(64, 64); c.rotate(-Math.PI / 3);
+      for (let x = -130 + t / 8 * P; x < 130; x += P) c.fillRect(x, -110, 1.5 + Math.max(0, Math.min(1, (x + 70) / 150)) * 12, 220);
+    }, [[K, O]]],
+    // A halftone grid whose dots swell and shrink in a wave running corner to corner.
+    [(c, t, [, a]) => {
+      c.fillStyle = a;
+      for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) {
+        const s = 0.5 + 0.5 * Math.cos(((i + j) / 6 - t / 8) * TAU);
+        disc(c, 14 + i * 20, 14 + j * 20, 1.5 + s * 8.5);
+      }
+    }, [[K, Rd]]],
+    // A four-leaf blob turning a quarter turn a loop (being four-fold, it joins up seamlessly).
+    [(c, t, [, a]) => {
+      c.fillStyle = a;
+      c.translate(64, 64); c.rotate(t / 8 * TAU / 4);
+      for (let i = 0; i < 4; i++) { const th = i / 4 * TAU; disc(c, Math.cos(th) * 25, Math.sin(th) * 25, 25); }
+    }, [[E, K]]],
+    // A bold plus in a disc: still, then a quarter turn (which looks the same) in one eased move.
+    [(c, t, [, a, d]) => {
+      c.fillStyle = a; disc(c, 64, 64, 50);
+      c.fillStyle = d;
+      c.translate(64, 64); c.rotate([0, 0, .06, .3, .7, .94, 1, 1][t] * TAU / 4);
+      rrect(c, -35, -11, 70, 22, 11); c.fill(); rrect(c, -11, -35, 22, 70, 11); c.fill();
+    }, [[G, Rd, G], [Y, E, Y]]],
+    // A sunset disc: bars across its lower part, thickening as they go down, scrolling down by one bar a loop.
+    [(c, t, [, a, d]) => {
+      c.fillStyle = a; disc(c, 64, 64, 48);
+      c.beginPath(); c.arc(64, 64, 48, 0, TAU); c.clip();
+      c.fillStyle = d;
+      const P = 13;
+      for (let y = 30 - P + t / 8 * P; y < 120; y += P) {
+        const w = Math.max(0, Math.min(1, (y - 40) / 70)) * 9;
+        if (w > 0.4) c.fillRect(0, y, SIZE, w);
+      }
+    }, [[Gy, G, K]]],
+    // A many-pointed burst turning by one point a loop.
+    [(c, t, [, a]) => {
+      const n = 16, rot = t / 8 * TAU / n;
+      c.fillStyle = a; c.beginPath();
+      for (let i = 0; i < n * 2; i++) {
+        const th = rot + i / (n * 2) * TAU, r = i % 2 ? 22 : 56;
+        c.lineTo(64 + Math.cos(th) * r, 64 + Math.sin(th) * r);
+      }
+      c.closePath(); c.fill();
+    }, [[Cy, O]]],
+    // A slot: a bar sliding across inside a rounded stadium and back, like a switch being thrown.
+    [(c, t, [, a, d, e]) => {
+      c.fillStyle = a; rrect(c, 8, 26, 112, 76, 38); c.fill();
+      c.fillStyle = d; rrect(c, 22, 40, 84, 48, 24); c.fill();
+      c.clip();
+      c.fillStyle = e; c.fillRect(30 + [0, .1, .45, .85, 1, .9, .55, .15][t] * 28, 50, 40, 28);
+    }, [[Cy, U, N, P]]],
+    // A route turning back on itself, ending in an arrowhead; its dashes run along it.
+    [(c, t, [, a]) => {
+      c.strokeStyle = a; c.lineWidth = 8; c.lineCap = 'butt';
+      c.setLineDash([14, 8]); c.lineDashOffset = -t / 8 * 22;
+      c.beginPath(); c.moveTo(118, 94); c.lineTo(54, 94); c.arc(54, 70, 24, Math.PI / 2, -Math.PI / 2); c.lineTo(90, 46); c.stroke();
+      c.setLineDash([]); c.lineCap = 'round'; c.lineJoin = 'round';
+      c.beginPath(); c.moveTo(78, 31); c.lineTo(93, 46); c.lineTo(78, 61); c.stroke();
+    }, [[T, L]]],
+    // A knobbly cross-shaped blob whose eight knobs swell in turn, round and round.
+    [(c, t, [bg, a]) => {
+      c.fillStyle = a; c.fillRect(34, 34, 60, 60);
+      [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]].forEach(([i, j], k) => {
+        const b = k === t ? 1 : k === (t + 7) % 8 ? 0.45 : 0;
+        disc(c, 64 + i * 30, 64 + j * 30, 13 + b * 4);
+      });
+      c.fillStyle = bg;
+      for (const s of [-1, 1]) for (const q of [-15, 15]) { disc(c, 64 + s * 30, 64 + q, 4.5); disc(c, 64 + q, 64 + s * 30, 4.5); }
+    }, [[S, M]]],
+    // Four arrows from the corners closing in on the middle and easing back out, one of them yellow.
+    [(c, t, [, a, d]) => {
+      const o = [0, 2, 6, 9, 9, 7, 3, 0][t];
+      c.translate(64, 64);
+      for (let i = 0; i < 4; i++) {
+        c.save(); c.rotate(i * TAU / 4); c.translate(-12 + o, -12 + o); // the tip, pointing at the middle
+        c.fillStyle = c.strokeStyle = i === 2 ? d : a;
+        c.fillRect(-26, -11, 26, 11); c.fillRect(-11, -26, 11, 26);
+        c.lineWidth = 11; c.beginPath(); c.moveTo(-5, -5); c.lineTo(-38, -38); c.stroke();
+        c.restore();
+      }
+    }, [[K, W, Y]]],
+    // A wire globe turning: its meridians slide round by one spacing a loop.
+    [(c, t, [, a]) => {
+      c.strokeStyle = a; c.lineWidth = 4.5;
+      c.beginPath(); c.arc(64, 64, 46, 0, TAU); c.stroke(); c.clip();
+      for (const y of [-30, -14, 0, 14, 30]) {
+        const h = Math.sqrt(46 * 46 - y * y);
+        c.beginPath(); c.moveTo(64 - h, 64 + y); c.lineTo(64 + h, 64 + y); c.stroke();
+      }
+      for (let k = 0; k < 6; k++) {
+        const rx = Math.abs(Math.cos((k + t / 8) / 6 * Math.PI)) * 46;
+        c.beginPath(); c.ellipse(64, 64, Math.max(0.5, rx), 46, 0, 0, TAU); c.stroke();
+      }
+    }, [[L, K]]],
+    // Six dots coming up one by one, a beat with all six, then gone.
+    [(c, t, [, a]) => {
+      c.fillStyle = a;
+      [[44, 34], [84, 34], [44, 64], [84, 64], [44, 94], [84, 94]].slice(0, [1, 2, 3, 4, 5, 6, 6, 0][t]).forEach(([x, y]) => disc(c, x, y, 12));
+    }, [[Rd, K]]],
+    // A grid of rounded squares in two sets, one growing as the other shrinks.
+    [(c, t, [, a]) => {
+      c.fillStyle = a;
+      const s = Math.cos(t / 8 * TAU);
+      for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+        const w = 17 + ((i + j) % 2 ? s : -s) * 6;
+        rrect(c, 16 + i * 32 - w / 2, 16 + j * 32 - w / 2, w, w, 3); c.fill();
+      }
+    }, [[O, P]]],
+  ];
+})();
+
+// Pixel tiles for the 3D view's floating loops, after the reference sheet of flat colour tiles (2026-11-13).
+// patch-bundle.py (section 32) inserts this file into the bundle right after the loops' own list (Tg) and before any
+// of them are drawn. Like the others, each is a 16 x 16 grid drawn for 8 frames (a one-second loop at 8 frames a
+// second) and given the same printed grain; unlike them each fills its whole square with a flat colour, keeps
+// its own colours (one or two colourways, not four random ones), and has its edges diffused and worn (rough, below).
+// The drawing function gets set(x, y, colour), the frame t (0-7) and the colourway [background, shape, ...]. The
+// smooth shapes further down (vec) draw straight onto the 128 x 128px frame instead of the 16 x 16 grid.
+{
+  const G = '#18c64a', R = '#ff5714', B = '#2b40d0', Y = '#ffe100', P = '#f8a0e6', C = '#66e6e0', W = '#ffffff', D = '#ff1a3c';
+  // Roughs up one drawn frame (128 x 128px at x0 on the strip) so no edge is ruler-straight. Near every edge between
+  // two colours each pixel may take the colour of a pixel up to 3px away (a sprayed, diffused edge); the tile's own
+  // outline wears away unevenly, more at the very edge. The noise is new each frame, so edges shimmer slightly as the
+  // loop plays, like hand-drawn line boil. The site's usual grain goes on afterwards.
+  // A page can soften all of this by setting ZZ_ROUGH below 1 before this file runs (the icons showcase does); the site
+  // leaves it unset, at 1.
+  const ROUGH = typeof ZZ_ROUGH === 'number' ? ZZ_ROUGH : 1;
+  const SIZE = 128, REACH = 3.5 * ROUGH, WEAR = 4 * ROUGH;
+  const rough = (ctx, x0, seed, everywhere) => {
+    let s = (seed * 9301 + 49297) % 2147483647 || 1;
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const img = ctx.getImageData(x0, 0, SIZE, SIZE), d = img.data, src = new Uint8ClampedArray(d);
+    const same = (a, b) => src[a] === src[b] && src[a + 1] === src[b + 1] && src[a + 2] === src[b + 2];
+    const at = (x, y) => (Math.min(SIZE - 1, Math.max(0, y)) * SIZE + Math.min(SIZE - 1, Math.max(0, x))) * 4;
+    // Which of the 16 x 16 grid cells touch a cell of another colour; only their pixels can change.
+    const near = new Uint8Array(256);
+    for (let cy = 0; cy < 16; cy++) for (let cx = 0; cx < 16; cx++) {
+      const o = at(cx * 8 + 4, cy * 8 + 4);
+      for (let j = -1; j <= 1 && !near[cy * 16 + cx]; j++) for (let i = -1; i <= 1; i++) {
+        if (!same(o, at((cx + i) * 8 + 4, (cy + j) * 8 + 4))) { near[cy * 16 + cx] = 1; break; }
+      }
+    }
+    for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
+      const o = (y * SIZE + x) * 4, edge = Math.min(x, y, SIZE - 1 - x, SIZE - 1 - y);
+      if (edge < WEAR && rnd() < (WEAR - edge) * 0.2) { d[o + 3] = 0; continue; }
+      if (!everywhere && !near[(y >> 3) * 16 + (x >> 3)]) continue;
+      const so = at(x + Math.round((rnd() + rnd() - 1) * REACH), y + Math.round((rnd() + rnd() - 1) * REACH));
+      if (!same(o, so) && rnd() < 0.7 * ROUGH) d[o] = src[so], d[o + 1] = src[so + 1], d[o + 2] = src[so + 2];
+    }
+    ctx.putImageData(img, x0, 0);
+  };
+  let made = 0;
+  const tile = (draw, ways) => {
+    let k = -1;
+    const f = (set, t, colours, ctx, x0) => {
+      if (t === 0) k++, made++;
+      const way = ways[k % ways.length];
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) set(x, y, way[0]);
+      draw(set, t, way, ctx, x0);
+      rough(ctx, x0, made * 8 + t, draw.zzSmooth);
+    };
+    f.zzN = ways.length; // how many colourways (textures) to make
+    return f;
+  };
+  const rows = (set, bitmap, x0, y0, colour) => bitmap.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) if (row[x] === 'X') set(x0 + x, y0 + y, colour);
+  });
+  const turn = (x, y, k) => { for (; k > 0; k--) [x, y] = [15 - y, x]; return [x, y]; };
+
+  // A square spiral, 1px line and 1px gap, from the edge in.
+  const spiral = [];
+  {
+    let x = 1, y = 1, dx = 1, dy = 0;
+    spiral.push([x, y]);
+    for (const n of [13, 13, 13, 11, 11, 9, 9, 7, 7, 5, 5, 3, 3, 1]) {
+      for (let i = 0; i < n; i++) { x += dx; y += dy; spiral.push([x, y]); }
+      [dx, dy] = [-dy, dx];
+    }
+  }
+  // The hearts are an even number of cells wide (12 and 10), so they sit exactly on the tile's centre line; at 11 and
+  // 9 cells they sat half a cell left of it.
+  const HEART = ['.XXX....XXX.', 'XXXXX..XXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX',
+    '.XXXXXXXXXX.', '..XXXXXXXX..', '...XXXXXX...', '....XXXX....', '.....XX.....'];
+  const HEART_SMALL = ['.XX....XX.', 'XXXX..XXXX', 'XXXXXXXXXX', 'XXXXXXXXXX', '.XXXXXXXX.', '..XXXXXX..', '...XXXX...', '....XX....'];
+  const QUESTION = ['.XXXXX.', 'XX...XX', 'XX...XX', '.....XX', '....XX.', '...XX..', '...XX..', '.......', '...XX..', '...XX..'];
+
+  Tg.push(
+    // Square spiral, turning a quarter every two frames.
+    tile((set, t, [, c]) => spiral.forEach(([x, y]) => set(...turn(x, y, (t >> 1) & 3), c)), [[G, B], [Y, D]]),
+    // Play: the triangle nudges forward and settles back.
+    tile((set, t, [, c]) => {
+      const o = [0, 0, 1, 2, 2, 2, 1, 0][t];
+      [1, 3, 5, 7, 9, 9, 7, 5, 3, 1].forEach((w, i) => { for (let x = 0; x < w; x++) set(4 + o + x, 3 + i, c); });
+    }, [[R, B]]),
+    // Checkerboard of 2px squares sliding diagonally, a pixel a frame.
+    tile((set, t, [, c]) => {
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if ((((x + t) >> 1) + ((y + t) >> 1)) & 1) set(x, y, c);
+    }, [[Y, D], [P, B]]),
+    // Brick rows (each row offset by half a brick) sliding along together.
+    tile((set, t, [, c]) => {
+      for (let y = 0; y < 16; y++) {
+        const r = y >> 1;
+        for (let x = 0; x < 16; x++) if ((((x + t + (r & 1) * 2) >> 2) & 1)) set(x, y, c);
+      }
+    }, [[B, D]]),
+    // Nested squares moving outward, like a tunnel.
+    tile((set, t, [, c]) => {
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+        const u = Math.floor(Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)) + 0.5);
+        if (((u + 8 - (t >> 1)) >> 1) & 1) set(x, y, c);
+      }
+    }, [[Y, D], [W, P]]),
+    // Heart: lub-dub, then a rest.
+    tile((set, t, [, c]) => {
+      if ([1, 0, 1, 0, 0, 0, 0, 0][t]) rows(set, HEART, 2, 3, c);
+      else rows(set, HEART_SMALL, 3, 4, c);
+    }, [[P, D], [R, Y]]),
+    // Question mark, bobbing.
+    tile((set, t, [, c]) => rows(set, QUESTION, 4, 3 + [0, 0, -1, -1, 0, 0, 1, 1][t], c), [[P, R]]),
+    // Exclamation mark: the bar draws down, then the dot lands.
+    tile((set, t, [, c]) => {
+      const n = Math.min(7, (t + 1) * 2);
+      for (let y = 3; y < 3 + n; y++) set(7, y, c), set(8, y, c);
+      if (t >= 3) for (const [x, y] of [[7, 11], [8, 11], [7, 12], [8, 12]]) set(x, y, c);
+    }, [[B, Y]]),
+    // Two chevrons marching left.
+    tile((set, t, [, c]) => {
+      for (let y = 3; y <= 12; y++) {
+        const a = Math.abs(y - 7.5) - 0.5;
+        for (let x = 0; x < 16; x++) if ((((x - a + t) % 8) + 8) % 8 < 2) set(x, y, c);
+      }
+    }, [[W, G]]),
+    // Diamond ring, breathing.
+    tile((set, t, [, c]) => {
+      const r = [4, 5, 6, 7, 7, 6, 5, 4][t];
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+        const s = Math.abs(x - 7.5) + Math.abs(y - 7.5);
+        if ((s >= r - 1 && s <= r) || s <= 1) set(x, y, c);
+      }
+    }, [[C, B]]),
+    // Arrow pointing down-right, nudging along its own direction and settling back. Head and shaft are both two
+    // pixels thick (the shaft is a run of 2 x 2 squares, so its steps overlap instead of touching at the corners).
+    tile((set, t, [, c]) => {
+      const p = 11 + [0, 0, 1, 2, 2, 2, 1, 0][t]; // the tip
+      for (let k = 0; k < 6; k++) set(p - k, p, c), set(p - k, p - 1, c), set(p, p - k, c), set(p - 1, p - k, c);
+      for (let k = 0; k < 8; k++) for (let j = 0; j < 2; j++) for (let m = 0; m < 2; m++) set(p - 1 - k + j, p - 1 - k + m, c);
+    }, [[G, Y]]),
+    // Four colour bands scrolling up.
+    tile((set, t) => {
+      const band = [Y, G, B, D];
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) set(x, y, band[((y + t * 2) >> 2) & 3]);
+    }, [[Y]]),
+  );
+
+  // ---- The smooth shapes (shapes.js, inlined just before this file), drawn straight onto the 128px frame, then
+  // roughed up and grained like the pixel tiles (all over, not only near the 16 x 16 grid's edges).
+  const vec = (draw, ways) => {
+    const f = (set, t, way, ctx, x0) => {
+      ctx.save();
+      ctx.translate(x0, 0);
+      ctx.beginPath(); ctx.rect(0, 0, SIZE, SIZE); ctx.clip();
+      draw(ctx, t, way);
+      ctx.restore();
+    };
+    f.zzSmooth = true;
+    return tile(f, ways);
+  };
+  Tg.push(...zzShapes.map(([draw, ways]) => vec(draw, ways)));
+}
+
+  // The scene's printed grain (bundle Mg): fine noise, coarser blotches, rare light specks, worn edges.
+  function grain(c, w, h) {
+    var img = c.getImageData(0, 0, w, h), d = img.data, r = rng(7 + w);
+    var bw = Math.ceil(w / 6), bl = new Float32Array(bw * Math.ceil(h / 6));
+    for (var i = 0; i < bl.length; i++) bl[i] = r() - 0.5;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var o = (y * w + x) * 4;
+      if (d[o + 3] < 8) continue;
+      var n = (r() - 0.5) * 46 + bl[Math.floor(y / 6) * bw + Math.floor(x / 6)] * 26 + (r() < 0.018 ? 70 : 0);
+      d[o] += n; d[o + 1] += n; d[o + 2] += n;
+      if ((x > 0 && d[o - 1] < 8 || x < w - 1 && d[o + 7] < 8 || y > 0 && d[o - w * 4 + 3] < 8 || y < h - 1 && d[o + w * 4 + 3] < 8) && r() < 0.2) d[o + 3] = Math.floor(d[o + 3] * (0.5 + r() * 0.35));
+      else if (r() < 0.012) d[o + 3] = Math.floor(d[o + 3] * 0.5);
+    }
+    c.putImageData(img, 0, 0);
+  }
+  function strip(f) {
+    var cv = document.createElement('canvas'); cv.width = 1024; cv.height = 128;
+    var c = cv.getContext('2d');
+    for (var t = 0; t < 8; t++) (function (x0) {
+      f(function (x, y, col) { if (x < 0 || y < 0 || x >= 16 || y >= 16) return; c.fillStyle = col; c.fillRect(x0 + x * 8, y * 8, 8, 8); }, t, [], c, x0);
+    })(t * 128);
+    grain(c, 1024, 128);
+    return cv;
+  }
+  // Tg: the twelve pixel tiles (0-11), then the fifteen smooth shapes (12-26).
+  var PICKS = [[12, 'Exit'], [24, 'World'], [5, 'Like'], [20, 'Switch'], [17, 'Add']];
+  var icons = PICKS.map(function (p) { return { frames: strip(Tg[p[0]]), label: p[1] }; });
+  var SIZE = 192, GAP = 96;
+
+  // ---- one frame ----------------------------------------------------------------------------------------------------
+  // n counts frames at 24 a second; the icons step eight times a second (every third frame), as on the site.
+  function render(n) {
+    var seconds = n / FPS, step = Math.floor(n / 3) % 8;
+    drawSky(30 + seconds);
+    // Lighter than the site: the contour sky at about half strength over a pale ground.
+    ctx.globalAlpha = 1; ctx.fillStyle = '#f1f1ee'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.5; ctx.drawImage(sky, 0, 0); ctx.globalAlpha = 1;
+    var total = icons.length * SIZE + (icons.length - 1) * GAP, x0 = (W - total) / 2, y0 = Math.round(H / 2 - SIZE / 2);
+    ctx.imageSmoothingEnabled = false;
+    icons.forEach(function (ic, i) {
+      ctx.drawImage(ic.frames, step * 128, 0, 128, 128, x0 + i * (SIZE + GAP), y0, SIZE, SIZE);
+    });
+  }
+
+  // ---- live, or exported ---------------------------------------------------------------------------------------------
+  // ?export=URL: draws every frame of the 8 seconds in turn and POSTs each as a PNG to URL?name=icons-f0001.png ...; the page
+  // title counts them, ending in "done". (Named icons-f0001.png and on.) Otherwise it plays in real time.
+  var sink = new URLSearchParams(location.search).get('export');
+  if (sink) {
+    var n = 0, total = FPS * SECONDS;
+    (function next() {
+      if (n >= total) { document.title = 'done ' + total; return; }
+      render(n);
+      out.toBlob(function (blob) {
+        var name = 'icons-f' + String(n + 1).padStart(4, '0') + '.png';
+        fetch(sink + '?name=' + name, { method: 'POST', body: blob }).then(function () { n++; document.title = n + '/' + total; next(); });
+      }, 'image/png');
+    })();
+  } else {
+    var start = performance.now();
+    (function loop(now) { render(Math.floor((now - start) / 1000 * FPS)); requestAnimationFrame(loop); })(start);
+  }
+})();
+</script>
+</body>
+</html>

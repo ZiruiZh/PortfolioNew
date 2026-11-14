@@ -1,11 +1,34 @@
 {
   "redirects": [
-    { "source": "/cs135study", "destination": "/cs135study/", "permanent": false }
+    {
+      "source": "/cs135study",
+      "destination": "/cs135study/",
+      "permanent": false
+    },
+    {
+      "source": "/showcase",
+      "destination": "/showcase/",
+      "permanent": false
+    }
   ],
   "headers": [
     {
       "source": "/cs135study/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/showcase/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ]
 }

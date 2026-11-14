@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Zirui Zhao · Icons</title>
+<link rel="icon" href="../favicon.svg" />
+<style>
+  /* An unlisted page for a social post (2026-11-14): five of the site's animated icons in a row, on the site's
+     contour-map background (lighter here), in a 16:9 frame. It plays live here; ?export renders it frame by
+     frame for a video (see the end of the script). Built by patch-bundle.py from .case-build/src/showcase.html. */
+  html, body { margin: 0; height: 100%; background: #d8d8d4; }
+  body { display: grid; place-items: center; overflow: hidden; }
+  canvas { display: block; width: min(100vw, 100vh * 16 / 9); height: auto; aspect-ratio: 16 / 9; }
+</style>
+</head>
+<body>
+<canvas id="frame" width="1920" height="1080" aria-label="Five animated icons: an arrow, a globe, a heart, a switch and a plus"></canvas>
+<script>
+(function () {
+  var W = 1920, H = 1080, FPS = 24, SECONDS = 8;
+  var out = document.getElementById('frame'), ctx = out.getContext('2d');
+  function rng(seed) { var s = seed; return function () { s = s * 16807 % 2147483647; return (s - 1) / 2147483646; }; }
+
+  // ---- the site's background: its contour-map sky, as on the loading screen (from Info's camera), at 70% over the
+  // page's grey ------------------------------------------------------------------------------------------------------
+  var sky = document.createElement('canvas'); sky.width = W; sky.height = H;
+  var gl = sky.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: true });
+  var drawSky = function () {};
+  if (gl && gl.getExtension('OES_standard_derivatives')) (function () {
+    /*ZZ_SKY_SHADER*/
+    function shader(type, src) { var sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null; }
+    var vs = shader(gl.VERTEX_SHADER, VS), fs = shader(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) return;
+    var prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+    gl.useProgram(prog);
+    var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    var U = function (n) { return gl.getUniformLocation(prog, n); };
+    var F = [-6, -3, -30], fl = Math.hypot(F[0], F[1], F[2]); F = [F[0] / fl, F[1] / fl, F[2] / fl];
+    var Rv = [-F[2], 0, F[0]], rl = Math.hypot(Rv[0], Rv[1], Rv[2]); Rv = [Rv[0] / rl, Rv[1] / rl, Rv[2] / rl];
+    var Uv = [Rv[1] * F[2] - Rv[2] * F[1], Rv[2] * F[0] - Rv[0] * F[2], Rv[0] * F[1] - Rv[1] * F[0]];
+    gl.uniform3fv(U('uF'), F); gl.uniform3fv(U('uR'), Rv); gl.uniform3fv(U('uU'), Uv);
+    gl.viewport(0, 0, W, H);
+    var tanH = Math.tan(60 * Math.PI / 360);
+    gl.uniform2f(U('uView'), tanH * W / H, tanH);
+    var uTime = U('uTime');
+    drawSky = function (seconds) { gl.uniform1f(uTime, seconds); gl.drawArrays(gl.TRIANGLES, 0, 3); };
+  })();
+
+  // ---- the icons: the site's own loops (shapes.js and tiles.js, the same code), roughed and grained as the 3D
+  // view draws them, shown pixel-sharp at one and a half times ------------------------------------------------------
+  var Tg = [];
+  var ZZ_ROUGH = 0.65; // edges a little less diffused than on the site (tiles.js)
+  /*ZZ_TILES*/
+  // The scene's printed grain (bundle Mg): fine noise, coarser blotches, rare light specks, worn edges.
+  function grain(c, w, h) {
+    var img = c.getImageData(0, 0, w, h), d = img.data, r = rng(7 + w);
+    var bw = Math.ceil(w / 6), bl = new Float32Array(bw * Math.ceil(h / 6));
+    for (var i = 0; i < bl.length; i++) bl[i] = r() - 0.5;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var o = (y * w + x) * 4;
+      if (d[o + 3] < 8) continue;
+      var n = (r() - 0.5) * 46 + bl[Math.floor(y / 6) * bw + Math.floor(x / 6)] * 26 + (r() < 0.018 ? 70 : 0);
+      d[o] += n; d[o + 1] += n; d[o + 2] += n;
+      if ((x > 0 && d[o - 1] < 8 || x < w - 1 && d[o + 7] < 8 || y > 0 && d[o - w * 4 + 3] < 8 || y < h - 1 && d[o + w * 4 + 3] < 8) && r() < 0.2) d[o + 3] = Math.floor(d[o + 3] * (0.5 + r() * 0.35));
+      else if (r() < 0.012) d[o + 3] = Math.floor(d[o + 3] * 0.5);
+    }
+    c.putImageData(img, 0, 0);
+  }
+  function strip(f) {
+    var cv = document.createElement('canvas'); cv.width = 1024; cv.height = 128;
+    var c = cv.getContext('2d');
+    for (var t = 0; t < 8; t++) (function (x0) {
+      f(function (x, y, col) { if (x < 0 || y < 0 || x >= 16 || y >= 16) return; c.fillStyle = col; c.fillRect(x0 + x * 8, y * 8, 8, 8); }, t, [], c, x0);
+    })(t * 128);
+    grain(c, 1024, 128);
+    return cv;
+  }
+  // Tg: the twelve pixel tiles (0-11), then the fifteen smooth shapes (12-26).
+  var PICKS = [[12, 'Exit'], [24, 'World'], [5, 'Like'], [20, 'Switch'], [17, 'Add']];
+  var icons = PICKS.map(function (p) { return { frames: strip(Tg[p[0]]), label: p[1] }; });
+  var SIZE = 192, GAP = 96;
+
+  // ---- one frame ----------------------------------------------------------------------------------------------------
+  // n counts frames at 24 a second; the icons step eight times a second (every third frame), as on the site.
+  function render(n) {
+    var seconds = n / FPS, step = Math.floor(n / 3) % 8;
+    drawSky(30 + seconds);
+    // Lighter than the site: the contour sky at about half strength over a pale ground.
+    ctx.globalAlpha = 1; ctx.fillStyle = '#f1f1ee'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.5; ctx.drawImage(sky, 0, 0); ctx.globalAlpha = 1;
+    var total = icons.length * SIZE + (icons.length - 1) * GAP, x0 = (W - total) / 2, y0 = Math.round(H / 2 - SIZE / 2);
+    ctx.imageSmoothingEnabled = false;
+    icons.forEach(function (ic, i) {
+      ctx.drawImage(ic.frames, step * 128, 0, 128, 128, x0 + i * (SIZE + GAP), y0, SIZE, SIZE);
+    });
+  }
+
+  // ---- live, or exported ---------------------------------------------------------------------------------------------
+  // ?export=URL: draws every frame of the 8 seconds in turn and POSTs each as a PNG to URL?name=icons-f0001.png ...; the page
+  // title counts them, ending in "done". (Named icons-f0001.png and on.) Otherwise it plays in real time.
+  var sink = new URLSearchParams(location.search).get('export');
+  if (sink) {
+    var n = 0, total = FPS * SECONDS;
+    (function next() {
+      if (n >= total) { document.title = 'done ' + total; return; }
+      render(n);
+      out.toBlob(function (blob) {
+        var name = 'icons-f' + String(n + 1).padStart(4, '0') + '.png';
+        fetch(sink + '?name=' + name, { method: 'POST', body: blob }).then(function () { n++; document.title = n + '/' + total; next(); });
+      }, 'image/png');
+    })();
+  } else {
+    var start = performance.now();
+    (function loop(now) { render(Math.floor((now - start) / 1000 * FPS)); requestAnimationFrame(loop); })(start);
+  }
+})();
+</script>
+</body>
+</html>

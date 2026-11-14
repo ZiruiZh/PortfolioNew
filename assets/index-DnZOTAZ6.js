@@ -4877,7 +4877,10 @@ var zzShapes = (function () {
   // two colours each pixel may take the colour of a pixel up to 3px away (a sprayed, diffused edge); the tile's own
   // outline wears away unevenly, more at the very edge. The noise is new each frame, so edges shimmer slightly as the
   // loop plays, like hand-drawn line boil. The site's usual grain goes on afterwards.
-  const SIZE = 128, REACH = 3.5, WEAR = 4;
+  // A page can soften all of this by setting ZZ_ROUGH below 1 before this file runs (the icons showcase does); the site
+  // leaves it unset, at 1.
+  const ROUGH = typeof ZZ_ROUGH === 'number' ? ZZ_ROUGH : 1;
+  const SIZE = 128, REACH = 3.5 * ROUGH, WEAR = 4 * ROUGH;
   const rough = (ctx, x0, seed, everywhere) => {
     let s = (seed * 9301 + 49297) % 2147483647 || 1;
     const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -4897,7 +4900,7 @@ var zzShapes = (function () {
       if (edge < WEAR && rnd() < (WEAR - edge) * 0.2) { d[o + 3] = 0; continue; }
       if (!everywhere && !near[(y >> 3) * 16 + (x >> 3)]) continue;
       const so = at(x + Math.round((rnd() + rnd() - 1) * REACH), y + Math.round((rnd() + rnd() - 1) * REACH));
-      if (!same(o, so) && rnd() < 0.7) d[o] = src[so], d[o + 1] = src[so + 1], d[o + 2] = src[so + 2];
+      if (!same(o, so) && rnd() < 0.7 * ROUGH) d[o] = src[so], d[o + 1] = src[so + 1], d[o + 2] = src[so + 2];
     }
     ctx.putImageData(img, x0, 0);
   };
@@ -4929,9 +4932,11 @@ var zzShapes = (function () {
       [dx, dy] = [-dy, dx];
     }
   }
-  const HEART = ['.XXX...XXX.', 'XXXXX.XXXXX', 'XXXXXXXXXXX', 'XXXXXXXXXXX', 'XXXXXXXXXXX',
-    '.XXXXXXXXX.', '..XXXXXXX..', '...XXXXX...', '....XXX....', '.....X.....'];
-  const HEART_SMALL = ['.XX...XX.', 'XXXX.XXXX', 'XXXXXXXXX', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....'];
+  // The hearts are an even number of cells wide (12 and 10), so they sit exactly on the tile's centre line; at 11 and
+  // 9 cells they sat half a cell left of it.
+  const HEART = ['.XXX....XXX.', 'XXXXX..XXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX',
+    '.XXXXXXXXXX.', '..XXXXXXXX..', '...XXXXXX...', '....XXXX....', '.....XX.....'];
+  const HEART_SMALL = ['.XX....XX.', 'XXXX..XXXX', 'XXXXXXXXXX', 'XXXXXXXXXX', '.XXXXXXXX.', '..XXXXXX..', '...XXXX...', '....XX....'];
   const QUESTION = ['.XXXXX.', 'XX...XX', 'XX...XX', '.....XX', '....XX.', '...XX..', '...XX..', '.......', '...XX..', '...XX..'];
 
   Tg.push(
