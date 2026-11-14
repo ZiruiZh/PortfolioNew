@@ -84,23 +84,48 @@ html body .theme-ico .zz-tt,html body .theme-ico:hover .zz-tt,html body .theme-i
 @media (max-width:349px){html body .zz-topright{top:45px}}
 
 /* Phones: the Info panels' column reaches the top of the screen (it started 56px down, so the panels were cut off at a
-   line partway down); the first panel's top margin keeps everything where it was at rest. As the panels scroll up they pass
-   under the nav and fade and blur together towards the top edge: one graded edge about 80px deep, blurred most at
-   the very top and easing out below. Both grow in with the first 40px of scrolling (--zz-k, 0 to 1, set by
-   info-swipe.js), rather than switching on. The blur is a strip stuck to the top of the column; the column's mask
-   keeps the 3D view behind out of it, so only the panels blur. */
+   line partway down); the first panel's top margin keeps everything where it was at rest. As the panels scroll up they
+   pass under the nav into a frosted top edge: five stacked blur layers (.zz-topblur, made by info-swipe.js), 1px to
+   18px, each reaching less far down, so the blur is heaviest at the very top and eases out over about 120px. They sit
+   above the column and below the nav, so the 3D view behind the panels is frosted too. Only the top 30px fades out.
+   All of it grows in with the first 40px of scrolling (--zz-k, 0 to 1, set by info-swipe.js) rather than switching on.
+   (Opacity goes on each layer: on their shared parent it would stop their blur from seeing what is behind.) */
 @media (max-width:640px){
   html body .cards .sg-stack{top:0!important;padding-top:0!important;
-    -webkit-mask-image:linear-gradient(transparent 0,transparent calc(var(--zz-k,0) * 16px),#000 calc(56px + var(--zz-k,0) * 26px));
-    mask-image:linear-gradient(transparent 0,transparent calc(var(--zz-k,0) * 16px),#000 calc(56px + var(--zz-k,0) * 26px))}
-  /* (The 62px above the first panel is that panel's top margin, not the column's padding: a sticky strip keeps
-     inside its scroller's padding, so padding would hold the blur 62px down.) */
+    -webkit-mask-image:linear-gradient(transparent 0,#000 calc(var(--zz-k,0) * 30px));
+    mask-image:linear-gradient(transparent 0,#000 calc(var(--zz-k,0) * 30px))}
+  /* (The 62px above the first panel is that panel's top margin, not the column's padding, so the column's top
+     edge is the screen's.) */
   html body .cards .sg-stack>.sg-col-l{margin-top:62px!important}
-  html body .cards .sg-stack::before{content:"";display:block;position:sticky;top:0;z-index:5;height:96px;margin:0 -14px -96px;
-    pointer-events:none;opacity:var(--zz-k,0);
-    -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
-    -webkit-mask-image:linear-gradient(#000 0,rgba(0,0,0,.8) 35%,rgba(0,0,0,.35) 65%,transparent 100%);
-    mask-image:linear-gradient(#000 0,rgba(0,0,0,.8) 35%,rgba(0,0,0,.35) 65%,transparent 100%)}
+  html body .zz-topblur{display:block;position:absolute;top:0;left:0;right:0;height:120px;z-index:6;pointer-events:none}
+  html body .zz-topblur>i{position:absolute;inset:0;opacity:var(--zz-k,0);transition:opacity .35s ease-out}
+  html body .cards:not(.is-open) .zz-topblur>i,html body .cards.case-open .zz-topblur>i{opacity:0}
+  html body .zz-topblur>i:nth-child(1){-webkit-backdrop-filter:blur(1px);backdrop-filter:blur(1px);
+    background:linear-gradient(color-mix(in srgb,var(--bg) 30%,transparent),transparent 55%);
+    -webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+  html body .zz-topblur>i:nth-child(2){-webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px);
+    -webkit-mask-image:linear-gradient(#000 50%,transparent 80%);mask-image:linear-gradient(#000 50%,transparent 80%)}
+  html body .zz-topblur>i:nth-child(3){-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+    -webkit-mask-image:linear-gradient(#000 35%,transparent 62%);mask-image:linear-gradient(#000 35%,transparent 62%)}
+  html body .zz-topblur>i:nth-child(4){-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    -webkit-mask-image:linear-gradient(#000 22%,transparent 46%);mask-image:linear-gradient(#000 22%,transparent 46%)}
+  html body .zz-topblur>i:nth-child(5){-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+    -webkit-mask-image:linear-gradient(#000 10%,transparent 32%);mask-image:linear-gradient(#000 10%,transparent 32%)}
+}
+html body .zz-topblur{display:none}
+@media (max-width:640px){html body .zz-topblur{display:block}}
+
+/* iPhones: Safari's fixed layout stops above its bottom bar, so the page's grey background showed in a band under it.
+   The stage (3D view, Info panels and case windows) runs on down to the screen's bottom edge (100lvh) instead, and
+   the scrolling parts get that much more room at their ends, so their last lines can still scroll clear of the bar.
+   The 3D view keeps its framing (bundle section 35). Only iPhones: elsewhere 100lvh can run off the screen. */
+@supports (-webkit-touch-callout:none) and (height:100lvh){
+  @media (max-width:640px){
+    html body .stage{bottom:auto;height:100lvh}
+    html body .cards .sg-stack{padding-bottom:calc(90px + 100lvh - 100dvh)!important}
+    html body .cs-scroll{padding-bottom:calc(70px + 100lvh - 100dvh)}
+    html body .cs-scroll > .cs-sheet.cs-case{padding-bottom:calc(clamp(20px,4vw,56px) + 100lvh - 100dvh)}
+  }
 }
 
 /* Cool mode's home text reads a touch heavier: a hairline outline thickens every weight evenly.

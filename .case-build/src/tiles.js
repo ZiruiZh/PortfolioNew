@@ -3,7 +3,8 @@
 // of them are drawn. Like the others, each is a 16 x 16 grid drawn for 8 frames (a one-second loop at 8 frames a
 // second) and given the same printed grain; unlike them each fills its whole square with a flat colour, keeps
 // its own colours (one or two colourways, not four random ones), and has its edges diffused and worn (rough, below).
-// The drawing function gets set(x, y, colour), the frame t (0-7) and the colourway [background, shape].
+// The drawing function gets set(x, y, colour), the frame t (0-7) and the colourway [background, shape, ...]. The
+// smooth shapes further down (vec) draw straight onto the 128 x 128px frame instead of the 16 x 16 grid.
 {
   const G = '#18c64a', R = '#ff5714', B = '#2b40d0', Y = '#ffe100', P = '#f8a0e6', C = '#66e6e0', W = '#ffffff', D = '#ff1a3c';
   // Roughs up one drawn frame (128 x 128px at x0 on the strip) so no edge is ruler-straight. Near every edge between
@@ -11,7 +12,7 @@
   // outline wears away unevenly, more at the very edge. The noise is new each frame, so edges shimmer slightly as the
   // loop plays, like hand-drawn line boil. The site's usual grain goes on afterwards.
   const SIZE = 128, REACH = 3.5, WEAR = 4;
-  const rough = (ctx, x0, seed) => {
+  const rough = (ctx, x0, seed, everywhere) => {
     let s = (seed * 9301 + 49297) % 2147483647 || 1;
     const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
     const img = ctx.getImageData(x0, 0, SIZE, SIZE), d = img.data, src = new Uint8ClampedArray(d);
@@ -28,7 +29,7 @@
     for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
       const o = (y * SIZE + x) * 4, edge = Math.min(x, y, SIZE - 1 - x, SIZE - 1 - y);
       if (edge < WEAR && rnd() < (WEAR - edge) * 0.2) { d[o + 3] = 0; continue; }
-      if (!near[(y >> 3) * 16 + (x >> 3)]) continue;
+      if (!everywhere && !near[(y >> 3) * 16 + (x >> 3)]) continue;
       const so = at(x + Math.round((rnd() + rnd() - 1) * REACH), y + Math.round((rnd() + rnd() - 1) * REACH));
       if (!same(o, so) && rnd() < 0.7) d[o] = src[so], d[o + 1] = src[so + 1], d[o + 2] = src[so + 2];
     }
@@ -41,8 +42,8 @@
       if (t === 0) k++, made++;
       const way = ways[k % ways.length];
       for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) set(x, y, way[0]);
-      draw(set, t, way);
-      rough(ctx, x0, made * 8 + t);
+      draw(set, t, way, ctx, x0);
+      rough(ctx, x0, made * 8 + t, draw.zzSmooth);
     };
     f.zzN = ways.length; // how many colourways (textures) to make
     return f;
@@ -106,13 +107,6 @@
       for (let y = 3; y < 3 + n; y++) set(7, y, c), set(8, y, c);
       if (t >= 3) for (const [x, y] of [[7, 11], [8, 11], [7, 12], [8, 12]]) set(x, y, c);
     }, [[B, Y]]),
-    // Chat bubble with typing dots.
-    tile((set, t, [, c]) => {
-      for (let x = 3; x <= 12; x++) set(x, 3, c), set(x, 11, c);
-      for (let y = 4; y <= 10; y++) set(2, y, c), set(13, y, c);
-      for (const [x, y] of [[4, 12], [5, 12], [4, 13]]) set(x, y, c);
-      [4, 7, 10].slice(0, t % 4).forEach(x => { set(x, 6, c), set(x + 1, 6, c), set(x, 7, c), set(x + 1, 7, c); });
-    }, [[G, Y]]),
     // Two chevrons marching left.
     tile((set, t, [, c]) => {
       for (let y = 3; y <= 12; y++) {
@@ -128,11 +122,12 @@
         if ((s >= r - 1 && s <= r) || s <= 1) set(x, y, c);
       }
     }, [[C, B]]),
-    // Arrow pointing down-right, nudging along its own direction and settling back.
+    // Arrow pointing down-right, nudging along its own direction and settling back. Head and shaft are both two
+    // pixels thick (the shaft is a run of 2 x 2 squares, so its steps overlap instead of touching at the corners).
     tile((set, t, [, c]) => {
-      const o = [0, 0, 1, 2, 2, 2, 1, 0][t] - 1, at = (x, y) => set(x + o, y + o, c);
-      for (let i = 0; i <= 8; i++) at(3 + i, 3 + i), at(4 + i, 3 + i);
-      for (let i = 0; i <= 5; i++) at(6 + i, 11), at(11, 6 + i);
+      const p = 11 + [0, 0, 1, 2, 2, 2, 1, 0][t]; // the tip
+      for (let k = 0; k < 6; k++) set(p - k, p, c), set(p - k, p - 1, c), set(p, p - k, c), set(p - 1, p - k, c);
+      for (let k = 0; k < 8; k++) for (let j = 0; j < 2; j++) for (let m = 0; m < 2; m++) set(p - 1 - k + j, p - 1 - k + m, c);
     }, [[G, Y]]),
     // Four colour bands scrolling up.
     tile((set, t) => {
@@ -140,4 +135,19 @@
       for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) set(x, y, band[((y + t * 2) >> 2) & 3]);
     }, [[Y]]),
   );
+
+  // ---- The smooth shapes (shapes.js, inlined just before this file), drawn straight onto the 128px frame, then
+  // roughed up and grained like the pixel tiles (all over, not only near the 16 x 16 grid's edges).
+  const vec = (draw, ways) => {
+    const f = (set, t, way, ctx, x0) => {
+      ctx.save();
+      ctx.translate(x0, 0);
+      ctx.beginPath(); ctx.rect(0, 0, SIZE, SIZE); ctx.clip();
+      draw(ctx, t, way);
+      ctx.restore();
+    };
+    f.zzSmooth = true;
+    return tile(f, ways);
+  };
+  Tg.push(...zzShapes.map(([draw, ways]) => vec(draw, ways)));
 }

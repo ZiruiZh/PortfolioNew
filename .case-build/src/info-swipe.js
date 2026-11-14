@@ -219,8 +219,21 @@ function bind(el) {
   el.addEventListener('click', event => {
     if (performance.now() < quietUntil) { event.preventDefault(); event.stopPropagation(); }
   }, true);
-  // The fade and blur along the column's top edge (case-window.css) grow in over the first 40px of scrolling.
-  const scrolled = () => el.style.setProperty('--zz-k', Math.min(1, Math.max(0, el.scrollTop) / 40).toFixed(3));
+  // The frosted top edge: five blur layers just after the column, under the nav (styled in case-window.css).
+  let blur = el.parentElement?.querySelector(':scope > .zz-topblur');
+  if (!blur && el.parentElement) {
+    blur = document.createElement('div');
+    blur.className = 'zz-topblur';
+    blur.setAttribute('aria-hidden', 'true');
+    blur.innerHTML = '<i></i><i></i><i></i><i></i><i></i>';
+    el.after(blur);
+  }
+  // The fade and blur along the column's top edge grow in over the first 40px of scrolling.
+  const scrolled = () => {
+    const k = Math.min(1, Math.max(0, el.scrollTop) / 40).toFixed(3);
+    el.style.setProperty('--zz-k', k);
+    blur?.style.setProperty('--zz-k', k);
+  };
   el.addEventListener('scroll', scrolled, { passive: true });
   scrolled();
 }

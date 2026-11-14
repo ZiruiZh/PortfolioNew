@@ -1,20 +1,26 @@
 <div id="zz-loader" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
   <canvas class="zl-sky" aria-hidden="true"></canvas>
-  <canvas class="zl-glyphs" aria-hidden="true"></canvas>
+  <div class="zl-snake" aria-hidden="true"></div>
+  <canvas class="zl-links" aria-hidden="true"></canvas>
 </div>
 <style>
   /* The loading screen: the 3D view's own background (its contour-map sky, drawn by the same shader from Info's
-     camera, at Info's 70% over the same ground) and one grainy pixel loop in the middle, the favicon's crosses. */
-  #zz-loader{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;
+     camera, at Info's 70% over the same ground) and, coming out of the middle of it, a slithering piece of the
+     home view's cloud: Playground cards, markers, routes and pixel loops. */
+  #zz-loader{position:fixed;inset:0;z-index:2147483000;overflow:hidden;
     background:#d8d8d4;color:#141414;font:500 14px/1 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.01em;
     transition:opacity .6s cubic-bezier(.22,1,.36,1),visibility 0s linear .6s}
-  /* The hand-off: the pixel loop goes first, then the whole screen fades. Its background is the 3D
+  /* The hand-off: the stack zooms in fast and the whole screen fades quickly behind it. Its background is the 3D
      view's own, so what appears is only the scene's works, lattice and pixel loops arriving on it. */
   #zz-loader.is-done{pointer-events:none}
-  #zz-loader.is-gone{opacity:0;visibility:hidden;transition:opacity 1.1s cubic-bezier(.4,0,.2,1),visibility 0s linear 1.1s}
+  #zz-loader.is-gone{opacity:0;visibility:hidden;transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility 0s linear .5s}
   #zz-loader .zl-sky{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.7}
-  #zz-loader .zl-glyphs{position:relative;display:block;image-rendering:pixelated;transition:transform .35s cubic-bezier(.5,0,.75,0),opacity .3s ease-in}
-  #zz-loader.is-done .zl-glyphs{transform:scale(.6);opacity:0}
+  #zz-loader .zl-snake{position:absolute;left:50%;top:50%;width:0;height:0}
+  #zz-loader .zl-snake>*{position:absolute;left:0;top:0;display:block;opacity:0;transform-origin:50% 50%;will-change:transform,opacity;
+    -webkit-user-select:none;user-select:none;pointer-events:none}
+  #zz-loader .zl-snake>canvas{max-width:none;max-height:none}
+  #zz-loader .zl-snake>.zl-px{image-rendering:pixelated}
+  #zz-loader .zl-links{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 </style>
 <script>
   (function () {
@@ -87,78 +93,279 @@
     function loop(now) {
       if (!running) return;
       requestAnimationFrame(loop);
-      if ((skip = !skip)) return; // about 30 frames a second
+      place(now); // the stack (below) moves every frame
+      if ((skip = !skip)) return; // the sky, about 30 frames a second
       drawSky(now - born);
     }
     drawSky(0);
-    if (!still) requestAnimationFrame(loop);
 
-    // ---- the mark: the favicon's crosses, with crisp analog grain --------------------------------------------
-    // Drawn straight in device pixels (no smoothing), on the scene's 16 x 16 grid: 7px cells (5px on small phones),
-    // so 112px across.
-    var N = 16;
-    var cell = innerWidth < 480 ? 5 : 7, size = N * cell;
-    glyphs.width = glyphs.height = Math.round(size * dpr);
-    glyphs.style.width = glyphs.style.height = size + 'px';
-    var ctx = glyphs.getContext('2d');
-    var PW = glyphs.width, PH = glyphs.height, px = PW / N;
-    var COLOURS = ['#ff1a3c', '#12a9e8', '#fccc0a'];
-    // Paper-like blotches stay put; the fine grain and the edge spray are new on every redraw, so the edges shimmer.
-    var blotch = (function () {
-      var r = rng(4242), bw = Math.ceil(PW / 6), b = new Float32Array(bw * Math.ceil(PH / 6));
-      for (var i = 0; i < b.length; i++) b[i] = r() - 0.5;
-      return function (x, y) { return b[Math.floor(y / 6) * bw + Math.floor(x / 6)]; };
-    })();
-    // The motion: eight steady steps a second, like the scene's loops. Every fourth step a new plus appears at the
-    // centre; the next step it splits into four crosses three cells out (where they stand clear of each other), and
-    // they move one cell further out each step, like ripples. Every plus keeps at least an empty cell around it.
-    // Towards the rim the pixels drop away at random (more the further out), so each set dissolves at the edge.
-    var STEP = 125, GAP = 4, AGES = 5;
-    function radius(age) { return age === 0 ? 0 : age + 2; } // 0, then 3, 4, 5, 6
-    function cross(put, x, y, c) { for (var a = -1; a <= 1; a++) { put(x + a, y, c); put(x, y + a, c); } }
-    var REACH = Math.max(2, Math.round(px * 0.45)); // how far the edge spray reaches, in device pixels
-    function render(step) {
-      ctx.clearRect(0, 0, PW, PH);
-      var put = function (x, y, c) {
-        if (x < 0 || y < 0 || x >= N || y >= N) return;
-        ctx.fillStyle = c; ctx.fillRect(Math.round(x * px), Math.round(y * px), Math.round(px), Math.round(px));
-      };
-      // Older (outer) sets first.
-      for (var age = AGES - 1; age >= 0; age--) {
-        if ((step - age) % GAP) continue;
-        var r = radius(age), g = (step - age) / GAP; // g: which set this is, counting from the first
-        [[7, 7 - r], [7 + r, 7], [7, 7 + r], [7 - r, 7]].forEach(function (q, i) { cross(put, q[0], q[1], COLOURS[((i + g) % 3 + 3) % 3]); });
-      }
-      var img = ctx.getImageData(0, 0, PW, PH), d = img.data, src = new Uint8ClampedArray(d);
-      var at = function (x, y) { return ((Math.min(PH - 1, Math.max(0, y)) * PW) + Math.min(PW - 1, Math.max(0, x))) * 4; };
-      for (var y = 0; y < PH; y++) for (var x = 0; x < PW; x++) {
-        var o = (y * PW + x) * 4, a = src[o + 3];
-        // Near an edge (something different within reach), a pixel may take a nearby pixel's colour, or its
-        // emptiness: specks scatter outward and the shape's border is eaten into. Crisp, pixel by pixel.
-        if (src[at(x - REACH, y) + 3] !== a || src[at(x + REACH, y) + 3] !== a || src[at(x, y - REACH) + 3] !== a || src[at(x, y + REACH) + 3] !== a ||
-            (a && (src[at(x - REACH, y)] !== src[o] || src[at(x, y - REACH)] !== src[o]))) {
-          var s2 = at(x + Math.round((Math.random() + Math.random() - 1) * REACH * 1.6), y + Math.round((Math.random() + Math.random() - 1) * REACH * 1.6));
-          if (Math.random() < 0.55) { d[o] = src[s2]; d[o + 1] = src[s2 + 1]; d[o + 2] = src[s2 + 2]; d[o + 3] = src[s2 + 3]; }
-        }
+    // ---- the stack: the home view's cloud, slithering out ------------------------------------------------------
+    // Made of what the cloud is made of: five Playground pieces in white cards, the scene's markers (one off each
+    // piece, a few loose), routes between the markers, and a few of the scene's pixel loops (tiles.js and shapes.js,
+    // the same code, so the same pixels, roughed edges and printed grain). The head is the scene's red marker with
+    // its white cross, tiny, in the middle. It sets off along a figure eight lying on its side, which winds out
+    // from nothing, and the rest come out of the same spot after it, one by one, each following exactly the path of
+    // the one ahead 0.13s later, so the body slithers along in an S. Its size follows one smooth curve, slow then
+    // faster and faster, right through to the zoom that hands over (the motion, below).
+    var Tg = [];
+    /*ZZ_TILES*/
+    var snake = root.querySelector('.zl-snake'), links = root.querySelector('.zl-links');
+    var small = Math.min(innerWidth, innerHeight), large = Math.max(innerWidth, innerHeight);
+    var BASE = Math.round(Math.max(84, Math.min(190, small * 0.2))); // a card's size at 1
+    var A = small * 0.17, LAG = 0.13, TURN = 2.2;
+    var WORKS = /*ZZ_WORKS*/;
+    function pick(list, n) {
+      var a = list.slice(), out = [];
+      while (out.length < n && a.length) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
+      return out;
+    }
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+
+    // The scene's printed grain (bundle Mg): fine noise, coarser blotches, rare light specks, worn edges.
+    function grain(c, w, h) {
+      var img = c.getImageData(0, 0, w, h), d = img.data, r = rng(Math.floor(Math.random() * 1e6) + 7);
+      var bw = Math.ceil(w / 6), bl = new Float32Array(bw * Math.ceil(h / 6));
+      for (var i = 0; i < bl.length; i++) bl[i] = r() - 0.5;
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+        var o = (y * w + x) * 4;
         if (d[o + 3] < 8) continue;
-        // The rim: from 4 cells out to the edge, more and more pixels drop away.
-        var dc = Math.max(Math.abs(x / px - 7.5), Math.abs(y / px - 7.5));
-        if (dc > 4 && Math.random() < Math.min(1, (dc - 4) / 3.6)) { d[o + 3] = 0; continue; }
-        var n = (Math.random() - 0.5) * 50 + blotch(x, y) * 26 + (Math.random() < 0.018 ? 70 : 0);
-        d[o] = Math.max(0, Math.min(255, d[o] + n)); d[o + 1] = Math.max(0, Math.min(255, d[o + 1] + n)); d[o + 2] = Math.max(0, Math.min(255, d[o + 2] + n));
+        var n = (r() - 0.5) * 46 + bl[Math.floor(y / 6) * bw + Math.floor(x / 6)] * 26 + (r() < 0.018 ? 70 : 0);
+        d[o] += n; d[o + 1] += n; d[o + 2] += n;
+        if ((x > 0 && d[o - 1] < 8 || x < w - 1 && d[o + 7] < 8 || y > 0 && d[o - w * 4 + 3] < 8 || y < h - 1 && d[o + w * 4 + 3] < 8) && r() < 0.35) d[o + 3] = Math.floor(d[o + 3] * (0.35 + r() * 0.4));
+        else if (r() < 0.012) d[o + 3] = Math.floor(d[o + 3] * 0.5);
       }
-      ctx.putImageData(img, 0, 0);
+      c.putImageData(img, 0, 0);
     }
-    var started = performance.now(), lastDraw = -1e9, lastStep = -1;
-    function animate(now) {
-      if (!running) return;
-      requestAnimationFrame(animate);
-      var step = Math.floor((now - started) / STEP);
-      // Redraw on every step, and about twelve times a second for the grain.
-      if (step !== lastStep || now - lastDraw > 83) { lastStep = step; lastDraw = now; render(step); }
+    // A loop's eight frames on one strip, drawn as the scene draws them (bundle Ng): 16 x 16 cells of 8px, grained.
+    function strip(f) {
+      var cv = document.createElement('canvas'); cv.width = 1024; cv.height = 128;
+      var c = cv.getContext('2d');
+      for (var t = 0; t < 8; t++) (function (x0) {
+        f(function (x, y, col) { if (x < 0 || y < 0 || x >= 16 || y >= 16) return; c.fillStyle = col; c.fillRect(x0 + x * 8, y * 8, 8, 8); }, t, [], c, x0);
+      })(t * 128);
+      grain(c, 1024, 128);
+      return cv;
     }
-    if (still) render(1); else requestAnimationFrame(animate);
+    // The scene's nine markers (bundle buildRoutes), each on a 64px square, drawn once to stamp from.
+    var MARKS = [
+      function (c) { c.fillStyle = '#fb0201'; c.fillRect(0, 0, 64, 64); c.fillStyle = '#fff'; c.fillRect(27, 12, 10, 40); c.fillRect(12, 27, 40, 10); },
+      function (c) { c.fillStyle = '#12a9e8'; c.beginPath(); c.arc(32, 32, 28, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(32, 32, 9, 0, 7); c.fill(); },
+      function (c) { c.fillStyle = '#fccc0a'; c.beginPath(); c.moveTo(32, 2); c.lineTo(62, 32); c.lineTo(32, 62); c.lineTo(2, 32); c.fill(); c.fillStyle = '#111'; c.fillRect(27, 27, 10, 10); },
+      function (c) { c.strokeStyle = '#ff5cf0'; c.lineWidth = 14; c.beginPath(); c.moveTo(10, 10); c.lineTo(54, 54); c.moveTo(54, 10); c.lineTo(10, 54); c.stroke(); },
+      function (c) { c.fillStyle = '#00cc99'; c.beginPath(); c.moveTo(32, 4); c.lineTo(62, 58); c.lineTo(2, 58); c.fill(); },
+      function (c) { c.strokeStyle = '#ffffff'; c.lineWidth = 8; c.beginPath(); c.arc(32, 32, 24, 0, 7); c.stroke(); c.fillStyle = '#ff6a13'; c.fillRect(28, 28, 8, 8); },
+      function (c) { for (var t = 0; t < 4; t++) for (var n = 0; n < 4; n++) { c.fillStyle = (n + t) % 2 ? '#111' : '#fff'; c.fillRect(n * 16, t * 16, 16, 16); } },
+      function (c) { c.fillStyle = '#2b40d0'; c.fillRect(0, 0, 64, 64); c.fillStyle = '#b6f03a'; c.fillRect(8, 26, 48, 12); },
+      function (c) { c.fillStyle = '#ff1a3c'; for (var t = 0; t < 3; t++) for (var n = 0; n < 3; n++) { c.beginPath(); c.arc(12 + t * 20, 12 + n * 20, 7, 0, 7); c.fill(); } }
+    ];
+    var stamp = MARKS.map(function (draw) { var cv = document.createElement('canvas'); cv.width = cv.height = 64; draw(cv.getContext('2d')); return cv; });
+    // Marker sizes as in the scene: a third small, about half medium, the rest large.
+    function markSize() { var p = Math.random(); return p < 0.35 ? rnd(10, 14) : p < 0.8 ? rnd(16, 26) : rnd(30, 44); }
+
+    // ---- what the stack is made of ------------------------------------------------------------------------------
+    // The head: the scene's red marker with its white cross, grained, shown pixel-sharp. It is what zooms at the end.
+    function headItem() {
+      var cv = document.createElement('canvas'), size = Math.round(BASE * 0.3);
+      cv.width = cv.height = 64; MARKS[0](cv.getContext('2d')); grain(cv.getContext('2d'), 64, 64);
+      cv.style.width = cv.style.height = size + 'px';
+      cv.className = 'zl-px';
+      return { el: cv, w: size, h: size, ready: true, off: [0, 0] };
+    }
+    // A Playground piece, framed as the cloud frames it: a white card with rounded corners and a 10px border.
+    function cardItem(src, size) {
+      var cv = document.createElement('canvas'), im = new Image(), it = { el: cv, w: 0, h: 0, ready: false, card: true };
+      im.decoding = 'async';
+      im.onload = function () {
+        var w = im.naturalWidth, h = im.naturalHeight, c = cv.getContext('2d');
+        cv.width = w + 20; cv.height = h + 20;
+        var rr = function (x, y, rw, rh, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + rw, y, x + rw, y + rh, r); c.arcTo(x + rw, y + rh, x, y + rh, r); c.arcTo(x, y + rh, x, y, r); c.arcTo(x, y, x + rw, y, r); c.closePath(); };
+        c.fillStyle = '#fff'; rr(0, 0, cv.width, cv.height, 22); c.fill();
+        c.save(); rr(10, 10, w, h, 17); c.clip(); c.drawImage(im, 10, 10); c.restore();
+        var a = Math.sqrt(cv.width / cv.height); // same area whatever its shape
+        it.w = Math.round(BASE * size * a); it.h = Math.round(BASE * size / a);
+        cv.style.width = it.w + 'px'; cv.style.height = it.h + 'px';
+        it.ready = true;
+      };
+      im.src = src;
+      return it;
+    }
+    // One of the scene's pixel loops, smaller.
+    function loopItem(f, size) {
+      var cv = document.createElement('canvas'), c = cv.getContext('2d'), frames = null;
+      cv.width = cv.height = 128;
+      cv.style.width = cv.style.height = size + 'px';
+      cv.className = 'zl-px';
+      return { el: cv, w: size, h: size, ready: true, frame: -1, draw: function (t) {
+        frames = frames || strip(f); // made when it first comes out, not all at once
+        c.clearRect(0, 0, 128, 128);
+        c.drawImage(frames, t * 128, 0, 128, 128, 0, 0, 128, 128);
+      } };
+    }
+    // In order along the body: the head, then the five pieces (a different order each visit) with three loops
+    // among them. Behind the head each sits a little off the line, so the body is a loose band, as the cloud is.
+    var cards = pick(WORKS, WORKS.length), loops = pick(Tg, 3), items = [];
+    ['head', 'card', 'loop', 'card', 'card', 'loop', 'card', 'loop', 'card'].forEach(function (kind) {
+      var it = kind === 'head' ? headItem() : kind === 'card' ? cards.length && cardItem(cards.shift(), rnd(0.75, 1.3))
+        : loops.length && loopItem(loops.shift(), Math.round(BASE * rnd(0.34, 0.48)));
+      if (!it) return;
+      if (!it.off) it.off = [rnd(-0.3, 0.3) * BASE, rnd(-0.3, 0.3) * BASE];
+      items.push(it);
+    });
+    // The head on top, then first to last.
+    for (var k = items.length - 1; k >= 0; k--) { items[k].el.style.zIndex = k ? 20 - k : 30; snake.appendChild(items[k].el); }
+
+    // ---- markers and routes, as in the cloud ---------------------------------------------------------------------
+    // Each piece has a marker just off one of its edges, and six more markers travel loose among the body. Routes
+    // run from marker to marker along the body in the scene's subway colours (now and then white), widths and
+    // styles: a loose curve, a straight line, an elbow, a zigzag or a wave, some dashed or dotted, with the scene's
+    // slight hand-drawn boil. A route draws itself out once both its ends are out; all of it clears as the zoom begins.
+    var ROUTE = ['#EE352E', '#00933C', '#0039A6', '#FCCC0A', '#FF6319', '#B933AD', '#6CBE45', '#00ADD0'];
+    var marks = [];
+    items.forEach(function (it, k) {
+      if (it.card) marks.push({ on: it, k: k, side: Math.floor(Math.random() * 4), along: rnd(0.12, 0.88), type: 1 + Math.floor(Math.random() * 8), size: markSize() });
+    });
+    for (var n = 0; n < 6; n++) marks.push({ k: rnd(0.6, items.length - 0.4), off: [rnd(-0.6, 0.6) * BASE, rnd(-0.6, 0.6) * BASE],
+      type: Math.floor(Math.random() * 9), size: markSize() });
+    marks.sort(function (a, b) { return a.k - b.k; });
+    var routes = [];
+    for (var n = 1; n < marks.length; n++) {
+      if (Math.random() < 0.25) continue;
+      var wt = Math.floor(Math.random() * 4);
+      routes.push({ a: marks[n - 1], b: marks[n], colour: Math.random() < 0.1 ? '#ffffff' : ROUTE[Math.floor(Math.random() * ROUTE.length)],
+        style: Math.floor(Math.random() * 5), width: [1.4, 2, 1.8, 4.5][wt], dash: wt === 1 ? [7, 5] : wt === 2 ? [0.5, 5] : null,
+        j: [rnd(-0.5, 0.5) * BASE, rnd(-0.5, 0.5) * BASE, rnd(-0.5, 0.5) * BASE, rnd(-0.5, 0.5) * BASE], seed: Math.random() * 10, from: 0 });
+    }
+    var lc = links.getContext('2d');
+    function sizeLinks() { links.width = Math.round(innerWidth * dpr); links.height = Math.round(innerHeight * dpr); }
+    sizeLinks(); addEventListener('resize', sizeLinks);
+    // Where a marker is on screen: off its piece's edge by a tenth of its height (turned and scaled with it), or,
+    // for a loose one, at its own place along the body.
+    function markAt(m, s, g) {
+      if (m.on) {
+        var it = m.on, w = it.w * it.sc, h = it.h * it.sc, gap = 0.1 * h + 4, x, y;
+        if (m.side < 2) { x = (m.along - 0.5) * w; y = m.side ? -h / 2 - gap : h / 2 + gap; }
+        else { x = m.side === 2 ? -w / 2 - gap : w / 2 + gap; y = (m.along - 0.5) * h; }
+        var r = it.lean * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
+        return [it.p[0] + x * c - y * sn, it.p[1] + x * sn + y * c];
+      }
+      var p = path(s - m.k * LAG);
+      return [p[0] + m.off[0] * g, p[1] + m.off[1] * g];
+    }
+    function markShown(m, s) { return m.on ? m.on.shown : s - m.k * LAG > 0.3; }
+    function drawLinks(now, s, g, fade) {
+      lc.setTransform(dpr, 0, 0, dpr, 0, 0);
+      lc.clearRect(0, 0, innerWidth, innerHeight);
+      if (fade <= 0) return;
+      lc.globalAlpha = fade;
+      lc.translate(innerWidth / 2, innerHeight / 2);
+      var boil = Math.floor(now / 83); // a new wobble twelve times a second
+      routes.forEach(function (rt) {
+        if (!markShown(rt.a, s) || !markShown(rt.b, s)) { rt.from = 0; return; }
+        rt.from = rt.from || now;
+        var pr = Math.min(1, (now - rt.from) / 420); pr = 1 - Math.pow(1 - pr, 3); // draws out, easing off
+        var P = markAt(rt.a, s, g), Q = markAt(rt.b, s, g), dx = Q[0] - P[0], dy = Q[1] - P[1], N = 30, pts = [];
+        for (var i = 0; i <= N; i++) {
+          var t = i / N, d = 1 - t, x, y;
+          if (rt.style === 0) { // a loose cubic curve
+            var c1x = P[0] + dx / 3 + rt.j[0] * g, c1y = P[1] + dy / 3 + rt.j[1] * g, c2x = P[0] + dx * 2 / 3 + rt.j[2] * g, c2y = P[1] + dy * 2 / 3 + rt.j[3] * g;
+            x = d * d * d * P[0] + 3 * d * d * t * c1x + 3 * d * t * t * c2x + t * t * t * Q[0];
+            y = d * d * d * P[1] + 3 * d * d * t * c1y + 3 * d * t * t * c2y + t * t * t * Q[1];
+          } else if (rt.style === 2) { // an elbow
+            x = P[0] + dx * Math.min(1, t * 2); y = P[1] + dy * Math.max(0, t * 2 - 1);
+          } else {
+            x = P[0] + dx * t; y = P[1] + dy * t;
+            var len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, o = 0;
+            if (rt.style === 3) o = (i % 2 ? 1 : -1) * 5 * Math.sin(t * Math.PI); // a zigzag
+            else if (rt.style === 4) o = Math.sin(t * Math.PI * 6 + now / 300) * 6 * Math.sin(t * Math.PI); // a wave
+            x += nx * o; y += ny * o;
+          }
+          var h = 1.2 * Math.sin(t * Math.PI), a1 = Math.sin(i * 12.9898 + rt.seed * 78.233 + boil * 37.719) * 43758.5453, a2 = Math.sin(i * 39.346 + rt.seed * 11.135 + boil * 83.155) * 24634.6345;
+          pts.push([x + (a1 - Math.floor(a1) - 0.5) * h, y + (a2 - Math.floor(a2) - 0.5) * h]);
+        }
+        var upto = pr * N;
+        lc.strokeStyle = rt.colour; lc.lineWidth = rt.width; lc.lineJoin = 'round';
+        lc.lineCap = rt.dash && rt.dash[0] < 1 ? 'round' : 'butt';
+        lc.setLineDash(rt.dash || []);
+        lc.beginPath(); lc.moveTo(pts[0][0], pts[0][1]);
+        for (var i = 1; i <= Math.ceil(upto); i++) {
+          var f = Math.min(1, upto - (i - 1)), b0 = pts[i - 1], b1 = pts[i];
+          lc.lineTo(b0[0] + (b1[0] - b0[0]) * f, b0[1] + (b1[1] - b0[1]) * f);
+        }
+        lc.stroke();
+      });
+      lc.setLineDash([]);
+      // The markers, over the routes, fading in as they come out.
+      marks.forEach(function (m) {
+        if (!markShown(m, s)) return;
+        var at = markAt(m, s, g), z = m.size * Math.min(1, 0.5 + g * 0.5);
+        lc.drawImage(stamp[m.type], at[0] - z / 2, at[1] - z / 2, z, z);
+      });
+      lc.globalAlpha = 1;
+    }
+
+    // ---- the motion -----------------------------------------------------------------------------------------
+    // The path: a figure eight on its side (once across for twice up and down), so the body behind the head always
+    // bends in an S. It winds out from the middle: its size eases in over the first 1.2s.
+    function path(s) {
+      var a = A * Math.pow(Math.min(1, Math.max(0, s) / 1.2), 1.5);
+      return [a * Math.sin(TURN * s), 0.42 * a * Math.sin(2 * TURN * s)];
+    }
+    // The size runs on one smooth curve from start to finish, on a clock of its own (u). Its logarithm is
+    // c u^2, plus b (u - ZOOM)^3 past ZOOM: the stack grows slowly at first and faster and faster, reaching full size
+    // at u = ZOOM (1.7s), and from there the cubic term, which joins on with no jolt, makes the zoom: in 0.35s the
+    // head grows until it covers the screen (the others sixteen times, clearing as they go). If the page is ready
+    // by then, u simply keeps time and nothing ever slows down. If it isn't, u eases to a stop just short of ZOOM
+    // (its speed falling off over the last 0.35s), the stack holding at full size while it slithers on, and when
+    // the page is ready u picks up speed again over about 0.2s and runs on into the zoom. Each item is 20ms behind
+    // the one ahead in the zoom and is drawn to the middle as it swells.
+    var S0 = 0.18, ZOOM = 1.7, C = -Math.log(S0) / (ZOOM * ZOOM), SPAN = 0.35;
+    var lift = C * ((ZOOM + SPAN) * (ZOOM + SPAN) - ZOOM * ZOOM);
+    items.forEach(function (it, k) {
+      var F = k ? 16 : Math.max(16, 1.6 * large / it.w);
+      it.B = (Math.log(F) - lift) / Math.pow(SPAN, 3);
+    });
+    var u = 0, rate = 1, lastNow = 0, handed = false, asked = false;
+    function place(now) {
+      var dt = lastNow ? Math.min(0.05, (now - lastNow) / 1000) : 0; lastNow = now;
+      if (asked) rate += (1 - rate) * (1 - Math.exp(-dt / 0.2));
+      else rate = Math.min(rate, Math.max(0, Math.min(1, (ZOOM - 0.02 - u) / 0.35)));
+      u += dt * rate;
+      var s = (now - born) / 1000, step = Math.floor(s * 8) % 8, g = Math.exp(Math.log(S0) + C * Math.min(u, ZOOM) * Math.min(u, ZOOM));
+      for (var k = 0; k < items.length; k++) {
+        var it = items[k], sk = s - k * LAG;
+        it.shown = false;
+        if (sk < 0 || !it.ready) { it.el.style.opacity = 0; continue; }
+        if (it.draw && it.frame !== step) { it.frame = step; it.draw(step); }
+        if (!it.since) it.since = now;
+        // Coming out. The head just fades in over 0.2s at its small size and from then on only follows the size
+        // curve, so its growth only ever speeds up. The others come out from half size over 0.4s on a
+        // smootherstep, which starts and ends without a jolt. A picture that loads late fades in over 0.25s.
+        var o = Math.min(1, sk / 0.4), ss = o * o * o * (o * (o * 6 - 15) + 10);
+        var appear = k ? ss : Math.min(1, sk / 0.2), emerge = k ? 0.5 + 0.5 * ss : 1;
+        if (!it.draw && it.card) appear = Math.min(appear, (now - it.since) / 250);
+        // A slight lean into the way it is going.
+        var p = path(sk), q = path(sk - 0.02), lean = Math.max(-1, Math.min(1, (p[0] - q[0]) / (A * 0.07))) * 6;
+        var z = Math.min(SPAN, Math.max(0, u - k * 0.02 - ZOOM)), e = z / SPAN, e2 = e * e, uk = Math.min(u, ZOOM + SPAN + k * 0.02);
+        var sc = Math.exp(Math.log(S0) + C * uk * uk + it.B * z * z * z) * emerge;
+        var op = appear * (1 - Math.max(0, (e - 0.6) / 0.4));
+        p = [(p[0] + it.off[0] * g) * (1 - e2), (p[1] + it.off[1] * g) * (1 - e2)]; lean *= 1 - e;
+        it.p = p; it.sc = sc; it.lean = lean; it.shown = appear > 0.6;
+        it.el.style.opacity = op.toFixed(3);
+        it.el.style.transform = 'translate3d(' + (p[0] - it.w / 2).toFixed(1) + 'px,' + (p[1] - it.h / 2).toFixed(1) + 'px,0) rotate(' +
+          lean.toFixed(2) + 'deg) scale(' + sc.toFixed(3) + ')';
+      }
+      drawLinks(now, s, g, 1 - Math.min(1, Math.max(0, u - ZOOM) / 0.12));
+      // Most of the way into the head's zoom, the scene and the cards make their entrance and the screen fades
+      // (quickly) from behind it.
+      if (!handed && u > ZOOM + 0.2) handed = true, handOff();
+    }
+    if (still) {
+      // No motion: the stack as it stands at full size, still.
+      var hold = function () { u = ZOOM - 0.02; rate = 0; lastNow = 0; place(born + 1700); };
+      hold(); setTimeout(hold, 500); setTimeout(hold, 1500); // again as the pictures arrive
+    }
     var timer = 0;
+    if (!still) requestAnimationFrame(loop);
 
     // ---- progress: not shown, but kept for screen readers --------------------------------------------------
     var shown = 0;
@@ -169,18 +376,22 @@
         shown = p; root.setAttribute('aria-valuenow', p);
       },
       done: function () {
-        if (root.classList.contains('is-done')) return;
-        this.set(100);
-        root.classList.add('is-done');
-        // Once the loop is out, the scene and the cards make their entrance as the screen fades.
-        setTimeout(function () {
-          document.documentElement.classList.remove('zz-booting');
-          dispatchEvent(new Event('zz:booted'));
-          root.classList.add('is-gone');
-        }, still ? 0 : 300);
-        setTimeout(function () { running = false; clearInterval(timer); gl && gl.getExtension('WEBGL_lose_context') && gl.getExtension('WEBGL_lose_context').loseContext(); root.remove(); }, still ? 50 : 1500);
+        // The page is ready: the stack runs on into its zoom (above), which hands over.
+        if (asked) return;
+        asked = true;
+        if (still) handOff();
+        // Never held up by a paused animation (a tab in the background): it hands over within 2.5s regardless.
+        else setTimeout(function () { if (!handed) { handed = true; handOff(); } }, 2500);
       }
     };
+    function handOff() {
+      window.zzLoader.set(100);
+      root.classList.add('is-done');
+      document.documentElement.classList.remove('zz-booting');
+      dispatchEvent(new Event('zz:booted'));
+      root.classList.add('is-gone');
+      setTimeout(function () { running = false; clearInterval(timer); gl && gl.getExtension('WEBGL_lose_context') && gl.getExtension('WEBGL_lose_context').loseContext(); root.remove(); }, still ? 50 : 700);
+    }
     // Never stuck: whatever happens, the page shows within twelve seconds.
     setTimeout(function () { window.zzLoader.done(); }, 12000);
   })();

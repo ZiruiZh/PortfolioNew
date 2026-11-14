@@ -461,7 +461,7 @@ sub('.to(s,{"--unf":`0deg`,duration:.3,ease:`sine.out`}));let l=new Map',
     'let l=new Map')
 
 # ---- 30. Zooming out of Works opens Playground; zooming well into Playground opens Works --------------------------
-# Works rests 37 units back (c_ to l_). A pinch or ctrl-scroll out that will carry the camera past 1.5 times that,
+# Works rests 37 units back (c_ to l_). A pinch or ctrl-scroll out that will carry the camera past twice that,
 # counting the zoom's own momentum (each frame adds zoomVel, which keeps 90% of itself, so it travels about
 # e^(10 zoomVel) further), switches to Playground just as its nav button does. So a quick flick goes over at once
 # and a slow zoom when it gets there. The camera stays where it is, so the zoom carries on into Playground's field.
@@ -484,6 +484,9 @@ sub('this.flying||(this.zzGlideStep(e),this.nav.update(e));', 'this.flying||(thi
 # camera can't come closer than Works' own distance, so the works always arrive at their usual size.
 # Works' nav button (and recentring) still lead to the usual Works view: the button resets the anchor and flies home.
 ZOOM_IN_TO_WORKS = 5
+# How far out (times Works' resting distance) leaves Works. 1.5 was easy to cross by accident (2026-11-14); the camera can't
+# go past 90 units, so the line never sits further out than 86.
+ZOOM_OUT_OF_WORKS = 2
 sub('return t.set(o*Math.cos(a)-s*Math.sin(a),r[1]+Math.sin(i*.26+e*1.3)*.5,o*Math.sin(a)+s*Math.cos(a)),t}bigSize',
     'return t.set(o*Math.cos(a)-s*Math.sin(a),r[1]+Math.sin(i*.26+e*1.3)*.5,o*Math.sin(a)+s*Math.cos(a)),this.zzW&&t.applyMatrix4(this.zzW),t}bigSize')
 # The cards' float and their rise as they fade in follow the anchored layout's up, not the world's.
@@ -518,7 +521,7 @@ sub('dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)',
     'if(this.zzOutMode!==this.mode)this.zzOutMode=this.mode,this.zzSeen=0;'
     'if(this.mode!==`works`||this.focus||this.zzGlide||N.locked||document.querySelector(`.case.is-open`))return;'
     'let h=Math.max(c_.distanceTo(l_),this.zzSeen||0);'
-    'if(N.dist*Math.exp(10*Math.max(0,N.zoomVel))>h*1.5&&T-(this.zzOutT||0)>1500){this.zzOutT=T,A.L=0;'
+    f'if(N.dist*Math.exp(10*Math.max(0,N.zoomVel))>Math.min(h*{ZOOM_OUT_OF_WORKS},N.maxDist-4)&&T-(this.zzOutT||0)>1500){{this.zzOutT=T,A.L=0;'
     'let p=N.target.clone(),d=N.dist,z=N.zoomVel,q=N.q.clone();document.querySelector(`.c-nav [data-showcase="nav-playground"]`)?.click();'
     'N.target.copy(p),N.dist=d,N.zoomVel=z,N.q.copy(q),this.zzRepivot=1}}'
     'dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)')
@@ -528,15 +531,37 @@ sub('dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)',
 sub(',Mi.fromTo(a,{yPercent:105,autoAlpha:0},{yPercent:0,autoAlpha:1,duration:n?0:.7,stagger:.04,ease:`expo.out`,delay:n?0:.75})]', ']')
 
 # ---- 32. More floating pixel loops: flat colour tiles after the reference sheet ------------------------------------
-# src/tiles.js adds 13 tiles (spinning square spiral, play, sliding checkerboard, brick rows, tunnel, beating heart,
-# bobbing question mark, exclamation, chat bubble typing, marching chevrons, breathing diamond, nudging arrow,
-# scrolling bands) to the loops' list. Each makes as many textures as it has colourways (zzN, 1 or 2) instead of the
-# usual 4 random ones, which keeps the extra texture memory to about 8.5MB.
-tiles = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'tiles.js')).read()
+# src/tiles.js adds 12 tiles (spinning square spiral, play, sliding checkerboard, brick rows, tunnel, beating heart,
+# bobbing question mark, exclamation, marching chevrons, breathing diamond, nudging arrow, scrolling bands) to the
+# loops' list, then 16 smooth shapes after a second set of references (signage arrow, scalloped badge, VHS stripes,
+# halftone wave, four-leaf blob, plus in a disc, sunset disc, daisy, burst, slot switch, U-turn route, knobbly cross,
+# four arrows closing in, wire globe, six dots, breathing rounded squares). Each makes as many textures as it has
+# colourways (zzN, 1 or 2) instead of the usual 4 random ones: 35 in all, about the 20 the five removed loops below
+# made, plus 15.
+SRC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src')
+shapes = open(os.path.join(SRC_DIR, 'shapes.js')).read()  # the smooth shapes, shared with the loading screen
+tiles = shapes + '\n' + open(os.path.join(SRC_DIR, 'tiles.js')).read()
 assert '`' not in tiles
 sub('Eg=[`#0101fd`,`#fefe02`,`#fe01fd`,`#01fe02`,`#00ffff`];function Dg(e)',
     'Eg=[`#0101fd`,`#fefe02`,`#fe01fd`,`#01fe02`,`#00ffff`];\n' + tiles + '\nfunction Dg(e)')
 sub('Tg.forEach(e=>{for(let t=0;t<4;t++){', 'Tg.forEach(e=>{for(let t=0;t<(e.zzN||4);t++){')
+# Some of the original loops change (2026-11-14). Taken out: the smooth fading circles, the block of random characters,
+# the wave of ~ - = + * # characters (both too recognisably "ASCII art") and the pixel concentric rings (cut flat where
+# they meet the square's edges); those last three sit together in the list, so they go as one run. Redrawn: the arrow
+# in a dotted corner: its shaft was a one-pixel diagonal whose pixels only touched at their corners, so it broke up.
+# Now the head and the shaft are both two pixels thick, the dotted corner is 2 x 2 dots at the same spacing, and the
+# arrow eases out of the corner and back instead of moving at a steady pace.
+sub('(e,t,n,r,i)=>{for(let e=0;e<4;e++){let a=(e*16+t*4)%64+2;r.strokeStyle=n[e%n.length],r.lineWidth=5,r.globalAlpha=1-a/70,r.beginPath(),r.arc(i+xg/2,xg/2,a,0,Math.PI*2),r.stroke()}r.globalAlpha=1},', '')
+RUN_START, RUN_END = '(e,t,n,r,i)=>{let a=Cg(300+t*7);', '(e,t,n)=>{let r=t%4;for(let t=0;t<yg;t++)'
+assert s.count(RUN_START) == 1 and s.count(RUN_END) == 1
+run = s[s.index(RUN_START):s.index(RUN_END)]
+assert run.count('fillText') == 2 and run.count('=>') == 3 and 'o=Math.round(a/2)' in run, run
+sub(run, '')
+sub('(e,t,n)=>{let r=[0,1,2,3,3,2,1,0][t],i=4-r,a=4-r;for(let t=0;t<6;t++)e(i+t,a,n[0]),e(i,a+t,n[0]);for(let t=1;t<9;t++)e(i+t,a+t,n[0]);for(let t=0;t<yg;t++)t%2==0&&(e(t,15,n[1]),e(15,t,n[1]))}',
+    '(e,t,n)=>{let o=3-[0,0,1,2,2,2,1,0][t];'
+    'for(let k=0;k<6;k++)e(o+k,o,n[0]),e(o+k,o+1,n[0]),e(o,o+k,n[0]),e(o+1,o+k,n[0]);'
+    'for(let k=0;k<8;k++)e(o+k,o+k,n[0]),e(o+k+1,o+k,n[0]),e(o+k,o+k+1,n[0]),e(o+k+1,o+k+1,n[0]);'
+    'for(let k=2;k<=14;k+=4)for(let j=0;j<2;j++)for(let m=0;m<2;m++)e(k+j,14+m,n[1]),e(14+m,k+j,n[1])}')
 
 # ---- 33. Each Playground piece's little marker sits off one of the piece's edges, and its lines meet it ----------
 # It used to sit just under the middle of every picture. Now each piece has its own spot, taken from its id so it is
@@ -552,6 +577,9 @@ sub('r.marker?.position.copy(r.sprite.position),r.sprite.scale.set(',
     'r.sprite.scale.set(')
 sub('n.copy(this.currentPos(a.a)).add(a.off),r.copy(this.currentPos(a.b)).add(a.off);',
     'n.copy(a.a.marker?a.a.marker.position:this.currentPos(a.a)).add(a.off),r.copy(a.b.marker?a.b.marker.position:this.currentPos(a.b)).add(a.off);')
+# Every marker stands upright (2026-11-14); three in ten used to be turned 45 degrees, so square ones read as diamonds.
+# The random draw that chose the turn is still made, so each marker keeps the shape and size it had.
+sub('t.material.rotation=o()<.3?Math.PI/4:0,', 't.material.rotation=(o(),0),')
 
 # ---- 34. A mouse wheel zooms; a trackpad's two-finger scroll still turns the view ---------------------------------
 # Browsers don't say which device a scroll comes from, so each burst of scrolling (no gap over 0.25s) is judged on its
@@ -567,6 +595,18 @@ sub('locked=!1;wheel=e=>{if(!this.enabled||(e.preventDefault(),this.locked))retu
     'locked=!1;wheel=e=>{if(!this.enabled||(e.preventDefault(),this.locked))return;if(e.ctrlKey){this.zzZt=performance.now(),this.zoomVel+=Math.sign(e.deltaY)*Math.min(Math.abs(e.deltaY),60)*.0012;return}'
     'if(this.zzMouse(e)){let w=e.wheelDeltaY,n=w&&w%120===0?Math.abs(w)/120:e.deltaMode?Math.abs(e.deltaY)/3:Math.abs(e.deltaY)/100;'
     'this.zzZt=performance.now(),this.zoomVel+=Math.sign(e.deltaY)*Math.min(n,3)*.015;return}')
+
+# ---- 35. On iPhones the 3D view carries on under Safari's bottom bar -------------------------------------------------
+# Safari's fixed layout stops above its bottom bar, so the page's grey background showed in a band under it.
+# case-window.css stretches the stage down to the screen's bottom edge there (100lvh); the canvas grows with it.
+# Framing stays exactly as it was: the camera's lens still describes the area above the bar (aspect and fov as before,
+# so the phone dial's glide, tap picking and every size work out the same) and the view offset just draws the extra
+# rows below it. Elsewhere the canvas is no taller than that area and nothing changes.
+sub('resize=()=>{this.zzDirty=!0;let e=this.el.clientWidth,t=this.el.clientHeight;this.renderer.setSize(e,t),this.composer?.setSize(e,t),this.camera.aspect=e/t,this.camera.fov=e<700?72:60,this.camera.updateProjectionMatrix();',
+    'resize=()=>{this.zzDirty=!0;let e=this.el.clientWidth,t=this.el.clientHeight,V=this.zzSvh||(this.zzSvh=document.body.appendChild(document.createElement(`i`)));'
+    'V.style.cssText=`position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none`,V=Math.min(t,V.offsetHeight||t);'
+    'this.renderer.setSize(e,t),this.composer?.setSize(e,t),this.camera.fov=e<700?72:60,'
+    't-V>1?this.camera.setViewOffset(e,V,0,0,e,t):(this.camera.aspect=e/t,this.camera.clearViewOffset()),this.camera.updateProjectionMatrix();')
 
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
@@ -628,6 +668,14 @@ assert html.startswith(DOCTYPE)
 html = DOCTYPE + '<!--\n\n' + art + '\n\n-->\n' + html[len(DOCTYPE):]
 # The loading screen paints before any script loads (src/loader.html); work/perf.js lifts it.
 loader = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'loader.html')).read().strip()
+# Its slithering stack shows the 3D view's own loops (section 32's shapes.js and tiles.js, the same code) and five
+# Playground pieces the user picked: Weightless, BCRC Montreal's two posters (Trains of Thought, Map of Care), RUN.
+# and AI Dehumanization.
+INTRO_WORKS = ['pg-16', 'pg-34', 'pg-35', 'pg-04', 'pg-23']
+assert loader.count('/*ZZ_TILES*/') == 1 and loader.count('/*ZZ_WORKS*/') == 1
+for w in INTRO_WORKS:
+    assert w in ORDER and os.path.exists(f'{SITE}/works/thumbs/{w}.webp'), w
+loader = loader.replace('/*ZZ_TILES*/', tiles).replace('/*ZZ_WORKS*/', json.dumps([f'works/thumbs/{w}.webp' for w in INTRO_WORKS]))
 BODY = '<body>'
 assert html.count(BODY) == 1
 html = html.replace(BODY, BODY + '\n' + loader, 1)
