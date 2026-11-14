@@ -630,6 +630,56 @@ sub('function Ng(e,t){let n=document.createElement(`canvas`);n.width=1024,n.heig
 sub('this.phases=r.map(e=>Array.from({length:vg},(t,n)=>{let r=e.clone();return r.userData.k=n,r}))',
     'this.phases=r.map(e=>Array.from({length:vg},(t,n)=>{let r=e.clone();return r.userData.k=n,(e.zzC||=[]).push(r),r}))')
 
+# ---- 38. Opening a case study or a Playground picture: no flash ------------------------------------------------------
+# The window's entrance (sheet rising from 70px below at 94% and fading in) was started from a useEffect, which runs
+# after the browser has painted: for one frame the window showed fully, at full size, then snapped to hidden and rose
+# in. It now starts from a useLayoutEffect, before the first paint. The dimmed backdrop behind it used to appear at
+# once, too; on a fresh open it now fades in over 0.45s with the sheet (not again when stepping to the next work while
+# the window is open, zzWas).
+sub('(0,l.useEffect)(()=>{let t=o.current;if(!t||!e)return;if(window.matchMedia(`(prefers-reduced-motion: reduce)`).matches){let e=Mi.fromTo(t.querySelector(`.cs-sheet`),{autoAlpha:0},{autoAlpha:1,duration:.25});return()=>{e.kill()}}let n=Mi.timeline({defaults:{ease:`expo.out`}});return n.fromTo(',
+    '(0,l.useLayoutEffect)(()=>{let t=o.current;if(!t||!e){t&&(t.zzWas=null);return}let W=t.zzWas;t.zzWas=e;'
+    'if(window.matchMedia(`(prefers-reduced-motion: reduce)`).matches){let e=Mi.fromTo(t.querySelector(`.cs-sheet`),{autoAlpha:0},{autoAlpha:1,duration:.25});return()=>{e.kill()}}'
+    # (The backdrop's fade is a tween of its own, alongside: added to the timeline first, it pushed the sheet's entrance
+    # back by its length.) Both are made paused, at their starting look, and set going two frames later: a case study's
+    # first frame is slow to draw, and with the clock running through it the window first showed already 40% in. Now
+    # that slow first frame is drawn invisible and the rise starts from nothing after it. Closing or stepping to another
+    # work before then cancels the start (a backdrop fade not yet begun is run so it isn't left clear).
+    'let n=Mi.timeline({defaults:{ease:`expo.out`},paused:!0}),B=t.querySelector(`.cs-scroll`),'
+    'Bt=B&&!W&&Mi.fromTo(B,{backgroundColor:`rgba(0,0,0,0)`},{backgroundColor:getComputedStyle(B).backgroundColor,duration:.45,ease:`power2.out`,clearProps:`backgroundColor`,paused:!0}),'
+    'R=requestAnimationFrame(()=>{R=requestAnimationFrame(()=>{R=0,n.play(0),Bt&&Bt.play(0)})});'
+    'return n.fromTo(')
+
+sub('.fromTo(t.querySelectorAll(`[data-in]`),{y:24,autoAlpha:0},{y:0,autoAlpha:1,duration:.8,stagger:.035},.15),()=>{n.kill()}},[e])',
+    '.fromTo(t.querySelectorAll(`[data-in]`),{y:24,autoAlpha:0},{y:0,autoAlpha:1,duration:.8,stagger:.035},.15),()=>{R&&cancelAnimationFrame(R),n.kill(),Bt&&Bt.paused()&&Bt.play(0)}},[e])')
+
+# ---- 39. The links between the works vary ---------------------------------------------------------------------------------
+# They were all the same coloured dashed line (each with a thin dotted line beside it). Now each of the three has its own
+# stroke: one solid, one dashed as before, one dotted with a heavier dot.
+sub('let r=(e,t,n,r)=>{let i=new pg;i.setPositions(Array(123).fill(0));let a=new qh({color:new X(e),linewidth:t,dashed:!0,dashSize:n,gapSize:r,transparent:!0,opacity:0});',
+    'let r=(e,t,n,r,D=!0)=>{let i=new pg;i.setPositions(Array(123).fill(0));let a=new qh({color:new X(e),linewidth:t,dashed:D,dashSize:n,gapSize:r,transparent:!0,opacity:0});')
+sub('seed:i*3.7+1,line:r(a,2.4,.5,.32),thin:r(`#111111`,1,.12,.3)})',
+    'seed:i*3.7+1,line:r(a,...[[2.6,0,0,!1],[2.4,.5,.32,!0],[3.6,.04,.26,!0]][i%3]),thin:r(`#111111`,1,.12,.3)})')
+
+# ---- 40. The home view's cloud has the three case studies in it too ----------------------------------------------------
+# Zeen, Allot and Prism join the cloud of Playground pieces as cards of their own (their Works pictures, drawn at most
+# 400px wide in the cloud's white frame). They are added after the routes and markers are made, so they have neither,
+# they fade in and out with the cloud (cloud.v) so they never show in Playground, and Playground's navigation (the
+# phone dial, activeNodes) leaves them out. In the cloud they take turns along its spiral like the rest.
+sub('this.buildWorks(),this.buildRoutes(),this.buildFrames(),', 'this.buildWorks(),this.buildRoutes(),this.zzCloudCases(),this.buildFrames(),')
+sub('buildWorks(){let e=f_(11)',
+    'zzCloudCases(){let R=f_(29);for(let w of Kg){let M=new tl({color:16777215,fog:!1,transparent:!0,opacity:0}),P=new hl(M);P.renderOrder=4,P.center.set(.5,-.06),P.visible=!1;'
+    'let N={work:w,rest:this.cloudCenter.clone(),base:this.cloudCenter.clone(),sprite:P,aspect:16/10,hover:0,hv:0,lean:0,size:.85+R()*.45,w4:0,w4p:0,zzCloudOnly:1},I=new Image;'
+    'I.onload=()=>{let W=Math.min(400,I.naturalWidth),H=Math.round(W*I.naturalHeight/I.naturalWidth),C=document.createElement(`canvas`);C.width=W+20,C.height=H+20;'
+    'let x=C.getContext(`2d`),q=(a,b,c,d,r)=>{x.beginPath(),x.moveTo(a+r,b),x.arcTo(a+c,b,a+c,b+d,r),x.arcTo(a+c,b+d,a,b+d,r),x.arcTo(a,b+d,a,b,r),x.arcTo(a,b,a+c,b,r),x.closePath()};'
+    'x.fillStyle=`#ffffff`,q(0,0,C.width,C.height,22),x.fill(),x.save(),q(10,10,W,H,17),x.clip(),x.imageSmoothingQuality=`high`,x.drawImage(I,10,10,W,H),x.restore();'
+    'let T=new fu(C);T.colorSpace=to,T.anisotropy=4,M.map=T,M.needsUpdate=!0,N.aspect=C.width/C.height};'
+    'I.src=`./${w.img}`,P.userData.node=N,this.scene.add(P),this.nodes.push(N)}}'
+    'buildWorks(){let e=f_(11)')
+sub('activeNodes(){return this.mode===`works`?this.big:this.nodes}', 'activeNodes(){return this.mode===`works`?this.big:this.nodes.filter(e=>!e.zzCloudOnly)}')
+sub('g*Math.min(1,this.zzIn*1.5),r.marker&&(r.marker.material.opacity=r.sprite.material.opacity,r.marker.visible=g>.02),r.sprite.visible=!!r.sprite.material.map&&g>.02',
+    'g*Math.min(1,this.zzIn*1.5)*(r.zzCloudOnly?this.cloud.v:1),r.marker&&(r.marker.material.opacity=r.sprite.material.opacity,r.marker.visible=g>.02),'
+    'r.sprite.visible=!!r.sprite.material.map&&g>.02&&(!r.zzCloudOnly||this.cloud.v>.02)')
+
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
 open(CSS_OUT, 'w').write(css)

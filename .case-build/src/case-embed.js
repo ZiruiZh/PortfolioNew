@@ -35,8 +35,47 @@ const reducedQuery = {
 const SLOW_CASE_MS = 2500;
 let current = null, pending = 0;
 
+// ---- what comes into view, loads and fades in -------------------------------------------------------------------------
+// Everything below the first screenful of a case study starts faded, blurred and a little low, and clears into place as
+// it scrolls into view (several arriving together come in a beat apart). Screen recordings' posters are loaded once
+// they are within about 600px (pictures are lazy too, prepare.mjs). Reduced motion: everything simply shows.
+const REVEAL = '.case-sections .case-section > *';
+function reveal(scope, sheet) {
+  const loadPosters = el => el.querySelectorAll('video[data-poster]').forEach(video => {
+    video.poster = video.dataset.poster;
+    delete video.dataset.poster;
+  });
+  const near = new IntersectionObserver(entries => entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    loadPosters(entry.target);
+    near.unobserve(entry.target);
+  }), { root: sheet, rootMargin: '600px 0px' });
+  const blocks = [...scope.querySelectorAll(REVEAL)];
+  blocks.forEach(block => block.querySelector('video[data-poster]') && near.observe(block));
+  if (motionQuery.matches) return () => near.disconnect();
+  const fold = sheet.getBoundingClientRect().top + sheet.clientHeight * 0.92;
+  const later = blocks.filter(block => block.getBoundingClientRect().top > fold);
+  later.forEach(block => block.classList.add('zz-reveal'));
+  const seen = new IntersectionObserver(entries => {
+    let n = 0;
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const block = entry.target;
+      block.style.setProperty('--zz-d', `${(n++ * 0.07).toFixed(2)}s`);
+      block.classList.add('is-in');
+      loadPosters(block);
+      seen.unobserve(block);
+      // Once in, it drops the effect (and the blur filter with it) so it draws as usual.
+      setTimeout(() => block.classList.remove('zz-reveal', 'is-in'), 1400);
+    }
+  }, { root: sheet, rootMargin: '0px 0px -6% 0px', threshold: 0.08 });
+  later.forEach(block => seen.observe(block));
+  return () => { near.disconnect(); seen.disconnect(); };
+}
+
 function teardown() {
   if (!current) return;
+  current.stopReveal?.();
   current.study.setMode('closed'); // pauses every video
   current.study.dispose();
   current.scope.remove();
@@ -61,6 +100,8 @@ function build(node, key) {
   study.render(key);
   study.setMode('project');
   current = { node, key, study, scope };
+  const revealIn = node.closest('.cs-sheet');
+  if (revealIn) current.stopReveal = reveal(scope, revealIn);
   // A case study scrolls inside its own frame (case-window.css): it opens at the top, and a wheel over the dark
   // margin around the frame still scrolls it.
   const sheet = node.closest('.cs-sheet');

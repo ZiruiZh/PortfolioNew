@@ -11,6 +11,28 @@
 .cs-case .case-sections{order:4}
 .cs-case>.cs-next{order:5}
 .cs-case .tx-title{font-size:clamp(36px,4.6vw,72px);line-height:.95;letter-spacing:-.035em}
+/* Wide screens: the case study's note ("This case study is still a work in progress...") sits in the title's column
+   straight under the title, beside the facts, rather than below the whole title block (where a tall facts column
+   left a gap under the title); what follows comes up with it. The column becomes a grid for this, and the title
+   block's own grid steps aside (display:contents) so its title and facts sit in it. (On narrow screens the note
+   already comes straight after the title.) */
+@media (width>820px){
+  /* (Title, note and facts share one row, so the row is as tall as the taller side and what follows starts below
+     both. The note sits in the title's cell, pushed down by the title's own top margin and one line of the title
+     (.95 of its font size, less its -.08em nudge) plus 16px: case study titles are one line.) */
+  .cs-case{display:grid;grid-template-columns:minmax(0,9fr) minmax(180px,3fr);column-gap:24px;row-gap:0;align-content:start}
+  .cs-case>*,.cs-case .case-hero,.cs-case .case-sections{grid-column:1/-1}
+  .cs-case>.cs-top{grid-row:1}
+  .cs-case .case-hero{grid-row:2}
+  .cs-case>.tx-head{display:contents}
+  html body .cs-case>.tx-head>.tx-title{grid-column:1;grid-row:3;margin-top:calc(clamp(32px,4vw,56px) - .08em)}
+  html body .cs-case>.tx-head>.tx-meta{grid-column:2;grid-row:3;margin-top:clamp(32px,4vw,56px)}
+  html body .cs-case .case-notice{grid-column:1;grid-row:3;align-self:start;
+    margin-top:calc(clamp(32px,4vw,56px) + .87 * clamp(36px,4.6vw,72px) + 16px)}
+  .cs-case .case-sections{grid-row:4}
+  .cs-case>.cs-next{grid-row:5}
+}
+
 /* A work window's title sits top left; its facts stand in a column on the right (stacked below on narrow screens). */
 .tx .tx-head{align-items:start}
 .tx .tx-head .tx-title{align-self:start;justify-self:start;text-align:left;margin-top:-.08em}
@@ -223,3 +245,11 @@ html.zz-booting body .cards .sg-col-l{translate:calc(-100% - 40px)}
 html.zz-booting body .cards .sg-col-r{translate:calc(100% + 40px)}
 html body .cards.is-open .sg-col-r{transition-delay:.07s}
 @media (max-width:640px){html.zz-booting body .cards .sg-stack{opacity:0;translate:0 30px}}
+
+/* A case study's blocks below the first screenful fade, unblur and rise into place as they scroll into view
+   (case-embed.js adds .zz-reveal, then .is-in; --zz-d staggers several arriving together). */
+.cs-case .zz-reveal{opacity:0;filter:blur(10px);transform:translateY(18px)}
+.cs-case .zz-reveal.is-in{opacity:1;filter:blur(0);transform:none;
+  transition:opacity .8s cubic-bezier(.22,1,.36,1) var(--zz-d,0s),filter .9s cubic-bezier(.22,1,.36,1) var(--zz-d,0s),transform .9s cubic-bezier(.22,1,.36,1) var(--zz-d,0s)}
+@media (max-width:640px){.cs-case .zz-reveal{filter:blur(6px)}}
+@media (prefers-reduced-motion:reduce){.cs-case .zz-reveal{opacity:1;filter:none;transform:none}}

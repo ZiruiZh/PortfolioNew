@@ -6,6 +6,8 @@ ln -sfn /Users/ziruizhao/Documents/PersonalPortfolioWebsite/node_modules node_mo
 node prepare.mjs
 node node_modules/vite/bin/vite.js build --config vite.config.mjs
 rm -rf "$SITE/work" && mkdir -p "$SITE/work" && cp -R dist/. "$SITE/work/"
+# The Zeen prototype (its own prebuilt app in the portfolio, at /zeen/ like there): the Zeen case study links to it.
+rsync -a --delete /Users/ziruizhao/Documents/PersonalPortfolioWebsite/public/zeen/ "$SITE/zeen/"
 bash "$HERE/make-thumbs.sh"
 python3 patch-bundle.py
 # Refuse to leave a broken page behind: the patched bundle must parse.

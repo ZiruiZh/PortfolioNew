@@ -31,6 +31,8 @@ function figure(image, caption, autoplay) {
   link.rel = 'noopener';
   link.setAttribute('aria-label', `View full image: ${image.caption}`);
   const img = h('img');
+  img.loading = 'lazy';
+  img.decoding = 'async';
   img.src = link.href;
   img.alt = image.caption;
   img.width = image.width;
@@ -85,7 +87,7 @@ function videoControls(video) {
 function clip(entry, autoplay) {
   const video = h('video');
   const src = projectVideo(entry.file);
-  video.poster = projectImage(entry.file.replace('.mp4', '-poster.webp'));
+  video.dataset.poster = projectImage(entry.file.replace('.mp4', '-poster.webp'));
   video.playsInline = true;
   video.disablePictureInPicture = true;
   video.preload = 'none';
@@ -156,6 +158,8 @@ const sectionParts = {
   cards: (part, project, autoplay) => h('div', 'case-cards', ...part.items.map(card => {
     const art = artwork(project, card.image);
     const img = h('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
     img.src = projectImage(art.file);
     img.alt = art.caption;
     img.width = art.width;

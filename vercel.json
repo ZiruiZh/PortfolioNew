@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/zeen",
+      "destination": "/zeen/",
+      "permanent": false
+    },
+    {
       "source": "/cs135study",
       "destination": "/cs135study/",
       "permanent": false

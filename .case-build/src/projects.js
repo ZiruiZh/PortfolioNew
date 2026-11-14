@@ -519,7 +519,7 @@ export const projects = {
             "file": "zeen-home-wide.mp4",
             "shape": "wide",
             "alt": "Scrolling the Zeen home screen",
-            "href": "https://zirui.ca/zeen/",
+            "href": "/zeen/",
             "text": "Try out Zeen here!"
           },
           {

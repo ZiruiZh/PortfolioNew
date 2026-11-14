@@ -17,10 +17,9 @@ const source = fs.readFileSync(`${PORT}/src/projects.js`, 'utf8');
 const start = source.indexOf('{', source.indexOf('export const projects ='));
 const all = JSON.parse(source.slice(start, source.indexOf('\n};', start) + 2));
 const projects = Object.fromEntries(KEYS.map(k => [k, all[k]]));
-// The Zeen prototype is its own app at zirui.ca/zeen/ and isn't copied here, so its link points there.
-for (const section of projects.zeen.sections) for (const part of section.content ?? []) {
-  if (part.type === 'prototype' && part.href === '/zeen/') part.href = 'https://zirui.ca/zeen/';
-}
+// The Zeen prototype is served from this site at /zeen/ (build.sh copies the portfolio's prebuilt app there), so its
+// link stays /zeen/ as in the portfolio. (It used to point at zirui.ca/zeen/, which went when this site replaced the
+// portfolio there.)
 // Copy edits asked for on this site that the portfolio doesn't have (yet).
 const EDITS = { 'Change the background while reading': 'Change the background while reading.' };
 const edit = node => {
@@ -78,8 +77,9 @@ report.prism = { copied: 2 };
 for (const file of ['case-study.js', 'illustrations.js', 'icons.js', 'work-layout.js', 'illustration-layers.json']) {
   fs.copyFileSync(`${PORT}/src/${file}`, `${HERE}/src/${file}`);
 }
-// One change to the copied renderer: the opening video (the hero) has its own autoplay switch, so lite mode and slow
-// connections, which still the rest of a case study, leave it playing as a loop with its pause and replay controls.
+// Changes to the copied renderer: the opening video (the hero) has its own autoplay switch, so lite mode and slow
+// connections, which still the rest of a case study, leave it playing as a loop with its pause and replay controls;
+// and pictures and posters further down load only as they come near (below).
 {
   const file = `${HERE}/src/case-study.js`;
   let code = fs.readFileSync(file, 'utf8');
@@ -87,6 +87,12 @@ for (const file of ['case-study.js', 'illustrations.js', 'icons.js', 'work-layou
   swap('export function installCaseStudy({ reducedQuery }) {', 'export function installCaseStudy({ reducedQuery, heroQuery = reducedQuery }) {');
   swap("document.getElementById('case-hero').replaceChildren(...hero(project, autoplay));",
     "document.getElementById('case-hero').replaceChildren(...hero(project, !heroQuery.matches && !navigator.connection?.saveData));");
+  // Only what is near gets loaded (2026-11-14): pictures are marked lazy before their address is set (set after, as
+  // in the portfolio, they all start downloading at once), and a screen recording's poster waits in data-poster until
+  // case-embed.js sees it coming near.
+  swap("  const img = h('img');\n  img.src = link.href;", "  const img = h('img');\n  img.loading = 'lazy';\n  img.decoding = 'async';\n  img.src = link.href;");
+  swap("    const img = h('img');\n    img.src = projectImage(art.file);", "    const img = h('img');\n    img.loading = 'lazy';\n    img.decoding = 'async';\n    img.src = projectImage(art.file);");
+  swap("  video.poster = projectImage(entry.file.replace('.mp4', '-poster.webp'));", "  video.dataset.poster = projectImage(entry.file.replace('.mp4', '-poster.webp'));");
   fs.writeFileSync(file, code);
 }
 
