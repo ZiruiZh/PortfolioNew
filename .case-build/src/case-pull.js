@@ -1,4 +1,5 @@
-// A Works case study can be pulled back down past its top, the way an iOS sheet is dismissed.
+// A Works case study or a Playground pop-up can be pulled back down past its top, the way an iOS sheet is
+// dismissed.
 //
 // - Touch: at the top of the study, a drag down takes hold of the whole window, which follows the finger one to
 //   one while the dimmed backdrop clears. Let go far enough down, or with a flick, and it carries on down and
@@ -32,6 +33,8 @@ function ownsTouch(target, sheet) {
 export function bindPull(sheet, margin) {
   if (!sheet || !margin || sheet.dataset.zzPull) return;
   sheet.dataset.zzPull = '1';
+  // A case study scrolls inside its window (case-window.css); a Playground pop-up scrolls on its backdrop.
+  const scroller = sheet.classList.contains('cs-case') ? sheet : margin;
 
   let y = 0;            // how far down the window sits
   let stop = null;      // cancels the running spring or glide
@@ -86,11 +89,11 @@ export function bindPull(sheet, margin) {
     if (!wheel || now - wheel.last > 150) {
       // A window still springing back is caught where it is.
       if (y) halt();
-      wheel = { top: sheet.scrollTop <= 0, last: now, raw: y ? unrubber(y, span()) : 0 };
+      wheel = { top: scroller.scrollTop <= 0, last: now, raw: y ? unrubber(y, span()) : 0 };
     }
     wheel.last = now;
     if (!y) {
-      if (sheet.scrollTop > 0) { wheel.top = false; return; }
+      if (scroller.scrollTop > 0) { wheel.top = false; return; }
       if (!wheel.top || dy >= 0 || Math.abs(dx) > Math.abs(dy) || !event.cancelable) return;
     }
     event.preventDefault();
@@ -130,7 +133,7 @@ export function bindPull(sheet, margin) {
     g = { x0: t.clientX, y0: t.clientY, mode: 'pending', samples: [], far: 0 };
     sample(t);
     if (y) { g.mode = 'pull'; g.y0 = t.clientY - y; } // caught mid-spring
-    else g.top = sheet.scrollTop <= 0;
+    else g.top = scroller.scrollTop <= 0;
   }
   function onMove(event) {
     if (!g || g.mode === 'native') return;
@@ -147,8 +150,8 @@ export function bindPull(sheet, margin) {
     }
     if (event.cancelable) event.preventDefault();
     g.far = Math.max(g.far, Math.abs(dy));
-    if (dy >= 0) { y = dy; sheet.scrollTop = 0; }       // the window follows the finger one to one
-    else { y = 0; sheet.scrollTop = -dy; g.scrolled = true; } // above where it started, the study scrolls
+    if (dy >= 0) { y = dy; scroller.scrollTop = 0; }       // the window follows the finger one to one
+    else { y = 0; scroller.scrollTop = -dy; g.scrolled = true; } // above where it started, the study scrolls
     draw();
   }
   function onEnd(event) {
@@ -161,7 +164,7 @@ export function bindPull(sheet, margin) {
         if (y + v * 0.2 > Math.min(sheet.clientHeight * 0.3, 220) && v > -300) close(v);
         else settle(v);
       } else if (g.scrolled && Math.abs(v) > 60) {
-        stop = glide(sheet, -v, () => { stop = null; });
+        stop = glide(scroller, -v, () => { stop = null; });
       }
     }
     g = null;
@@ -179,3 +182,10 @@ export function bindPull(sheet, margin) {
     if (event.isTrusted && performance.now() < quietUntil) { event.preventDefault(); event.stopPropagation(); }
   }, true);
 }
+
+// Every window gets it as it opens: Works case studies and Playground pop-ups alike.
+const find = () => {
+  for (const sheet of document.querySelectorAll('.cs-scroll > .cs-sheet:not([data-zz-pull])')) bindPull(sheet, sheet.parentElement);
+};
+find();
+new MutationObserver(find).observe(document.documentElement, { childList: true, subtree: true });

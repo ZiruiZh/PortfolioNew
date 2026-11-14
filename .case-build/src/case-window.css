@@ -44,10 +44,15 @@
 .corner-br .zz-crest-link:hover .zz-crest{scale:1.15}
 .zz-crest{transition:scale .2s cubic-bezier(.34,1.56,.64,1)}
 
-/* Light / dark toggle: two words set like the nav. The current mode reads in full ink, the other in grey. */
+/* Light / dark toggle: a 5 x 5 block of 2.5px pixels, 12.5px in all (exact device pixels on 2x screens) (bundle section 14): a sun in light mode, a crescent moon in dark.
+   Switching flips the pixels that differ one by one, each after its own delay (--d, up to 0.26s), with no fade: a
+   flip-dot sign changing over. The site's old spins (on hover, and in light mode) are switched off. */
 .theme-ico,.theme-ico:hover,.theme-ico:active{transform:none!important}
-.theme-ico{width:auto!important;height:auto!important;top:15px!important;right:16px!important;display:flex!important;gap:10px;align-items:center;font:400 13px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;cursor:pointer}
-.theme-ico .tt-opt{padding:2px 0}
+.theme-ico{width:auto!important;height:auto!important;top:15px!important;right:16px!important;display:flex!important;align-items:center;padding:2px 0!important;cursor:pointer}
+html body .theme-ico .zz-tt,html body .theme-ico:hover .zz-tt,html body .theme-ico.is-light .zz-tt{display:block;width:12.5px!important;height:12.5px!important;transform:none!important;transition:none!important;overflow:visible}
+.theme-ico .zz-px{opacity:0;transition:opacity 0s linear var(--d,0s)}
+.theme-ico.is-light .zz-px.s,.theme-ico:not(.is-light) .zz-px.m{opacity:1}
+@media (prefers-reduced-motion:reduce){.theme-ico .zz-px{transition:none}}
 
 /* Recruiter mode sits left of Light / Dark; together they make the top-right group. */
 .zz-topright{position:absolute;top:15px;right:16px;z-index:6;display:flex;align-items:center;gap:16px;pointer-events:auto;transition:opacity .3s}
@@ -72,6 +77,22 @@
 @media (max-width:370px){
   .zz-topright{right:10px}
   .zz-recruiter,.theme-ico{font-size:13px!important}
+}
+/* Phones leave Recruiter mode out of the nav (it stays on wider screens). Light / Dark moves up into the nav row
+   it now has to itself; on the narrowest phones, where it would run into "Works", it stays just below. */
+@media (max-width:640px){html body .zz-topright .zz-recruiter{display:none!important}}
+@media (max-width:349px){html body .zz-topright{top:45px}}
+
+/* Phones: where the Info panels run under the top edge they blur as well as fade (the stack's own mask fades
+   them). The blur is a strip stuck to the top of the scrolling column, and it only blurs the panels (the column's
+   mask keeps the 3D view behind out of it). It shows once the panels have scrolled (zz-scrolled, info-swipe.js),
+   so the name card's top is sharp at rest. */
+@media (max-width:640px){
+  html body .cards .sg-stack::before{content:"";display:block;position:sticky;top:0;z-index:5;height:34px;margin:-6px -14px -28px;
+    pointer-events:none;opacity:0;transition:opacity .2s ease-out;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    -webkit-mask-image:linear-gradient(#000 0,#000 30%,#0000 100%);mask-image:linear-gradient(#000 0,#000 30%,#0000 100%)}
+  html body .cards .sg-stack.zz-scrolled::before{opacity:1}
 }
 
 /* Cool mode's home text reads a touch heavier: a hairline outline thickens every weight evenly.
@@ -102,9 +123,9 @@ html body .cards.cards .zz-crest{background:#fff!important}
 
 /* Every floating word has the same white difference fill; words that aren't the current view or theme are
    dimmed with opacity, and come up to full strength on hover. */
-html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter){opacity:.45!important;text-decoration:none!important;transition:opacity .2s ease-out!important}
+html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter,.theme-ico:not(.is-off)){opacity:.45!important;text-decoration:none!important;transition:opacity .2s ease-out!important}
 html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill.is-on,.tt-opt.is-on),
-html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter):is(:hover,:focus-visible){opacity:1!important}
+html body .cards.cards>:is(.c-nav,.zz-topright) :is(.pill,.tt-opt,.zz-recruiter,.theme-ico:not(.is-off)):is(:hover,:focus-visible){opacity:1!important}
 
 /* The footer corners set their text at the top bar's size: 13px, 14px on phones like the nav. */
 html body .cards.cards>:is(.corner-bl,.corner-br){font-size:13px!important}

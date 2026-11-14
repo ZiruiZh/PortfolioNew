@@ -28,7 +28,11 @@ def obj(d):
     return '{' + ','.join(parts) + '}'
 
 # ---- 1. Playground metadata ------------------------------------------------
-KEEP = ['w01', 'w02', 'w03', 'w05', 'w13', 'w16', 'w20', 'w31', 'w33']
+# Playground holds only Zirui's own pieces (the portfolio's playground images, and the ArtsFest poster). The nine
+# pieces kept from the original template (w01 The winter, w02 Fear of Lice, w03 Extior, w05 Koi Plaza, w13 Oval Altar,
+# w16 Almost Touching, w20 Manta Courtyard, w31 Square Tunnel, w33 Crosswalk Network) were AI-made and came out on
+# 2026-11-13; list an id here to bring one back.
+KEEP = []
 ug_start = s.index('Ug={w01')
 ug_end = s.index('},Wg={', ug_start) + 1
 old_ug = s[ug_start + 3:ug_end]
@@ -62,11 +66,11 @@ wg_end = s.index('},Gg=', wg_start) + 1
 bodies = dict(re.findall(r'(w\d\d):`([^`]*)`', s[wg_start:wg_end]))
 s = s[:wg_start] + 'Wg={' + ','.join(f'{k}:{tl(bodies[k])}' for k in KEEP if k in bodies) + '}' + s[wg_end:]
 
-# ---- 3. Playground order: originals spread through the new pieces ----------
-ORDER = ['pg-16', 'w01', 'pg-07', 'pg-06', 'pg-25', 'w02', 'pg-11', 'pg-24', 'w03', 'pg-12',
-         'pg-02', 'w05', 'pg-23', 'pg-18', 'pg-34', 'w13', 'pg-21', 'pg-01', 'pg-04', 'w16',
-         'pg-26', 'pg-09', 'pg-29', 'w20', 'pg-15', 'pg-05', 'pg-35', 'w31', 'pg-17', 'pg-08',
-         'pg-32', 'w33', 'pg-30', 'pg-13', 'pg-22',
+# ---- 3. Playground order ---------------------------------------------------------
+ORDER = ['pg-16', 'pg-07', 'pg-06', 'pg-25', 'pg-11', 'pg-24', 'pg-12',
+         'pg-02', 'pg-23', 'pg-18', 'pg-34', 'pg-21', 'pg-01', 'pg-04',
+         'pg-26', 'pg-09', 'pg-29', 'pg-15', 'pg-05', 'pg-35', 'pg-17', 'pg-08',
+         'pg-32', 'pg-30', 'pg-13', 'pg-22',
          # Added last so every earlier piece keeps its place in the lattice.
          'artsfest']
 assert len(ORDER) == len(set(ORDER)) == len(KEEP) + len(meta)
@@ -243,18 +247,34 @@ webring = ('(0,$.jsxs)(`span`,{className:`zz-webring`,children:['
 # The x.com handle loses its trailing arrow; the webring follows it.
 sub('e.label,` `,f(`e2ffc48f1d6d`,`↗`)))]})', 'e.label)),' + webring + ']})')
 
-# ---- 14. Light / dark toggle: plain words like the nav, no rotating square ---------------------
-sub('children:(0,$.jsxs)(`svg`,{...m(`bbb0f5c93433`),viewBox:`0 0 14 14`,width:`14`,height:`14`,"aria-hidden":`true`,children:[(0,$.jsx)(`rect`,{...m(`480e8dfd63c2`),x:`0.5`,y:`0.5`,width:`13`,height:`13`,fill:`none`,stroke:`currentColor`}),(0,$.jsx)(`path`,{...m(`4a74c637271b`),className:`half`,d:`M0.5 0.5 L13.5 13.5 L0.5 13.5 Z`,fill:`currentColor`})]})})',
-    'children:[(0,$.jsx)(`span`,{className:`tt-opt${j?` is-on`:``}`,children:`Light`},`l`),(0,$.jsx)(`span`,{className:`tt-opt${j?``:` is-on`}`,children:`Dark`},`d`)]})')
+# ---- 14. Light / dark toggle: a 5 x 5 pixel block, sun in light mode, crescent moon in dark -------------------
+# (Before: a half-filled circle, the words "Light Dark", a rotating square.) Switching flips the pixels that differ
+# one at a time in a fixed scattered order over about 0.25s, like a flip-dot sign; pixels both shapes share stay lit.
+# Each pixel is a 3px square (15px in all); case-window.css shows the right set and carries each pixel's delay (--d).
+SUN = ['X.X.X', '.XXX.', 'XXXXX', '.XXX.', 'X.X.X']
+MOON = ['.XXX.', 'XX...', 'XX...', 'XX...', '.XXX.']
+TT_PIXELS = []
+for y in range(5):
+    for x in range(5):
+        kinds = ('s' if SUN[y][x] == 'X' else '') + ('m' if MOON[y][x] == 'X' else '')
+        if not kinds:
+            continue
+        delay = ((x * 7 + y * 11) % 25) * 11  # a fixed scattered order, 0-264ms
+        cls = ' '.join(['zz-px'] + list(kinds))
+        TT_PIXELS.append(f'(0,$.jsx)(`rect`,{{x:`{x*3}`,y:`{y*3}`,width:`3`,height:`3`,fill:`currentColor`,className:`{cls}`,style:{{"--d":`{delay}ms`}}}})')
 
-# ---- 15. Recruiter mode: a button beside Light / Dark that switches to the original portfolio (recruiter/) --
+sub('children:(0,$.jsxs)(`svg`,{...m(`bbb0f5c93433`),viewBox:`0 0 14 14`,width:`14`,height:`14`,"aria-hidden":`true`,children:[(0,$.jsx)(`rect`,{...m(`480e8dfd63c2`),x:`0.5`,y:`0.5`,width:`13`,height:`13`,fill:`none`,stroke:`currentColor`}),(0,$.jsx)(`path`,{...m(`4a74c637271b`),className:`half`,d:`M0.5 0.5 L13.5 13.5 L0.5 13.5 Z`,fill:`currentColor`})]})})',
+    'children:(0,$.jsxs)(`svg`,{className:`zz-tt`,viewBox:`0 0 15 15`,width:`15`,height:`15`,shapeRendering:`crispEdges`,"aria-hidden":`true`,children:['
+    + ','.join(TT_PIXELS) + ']})})')
+
+# ---- 15. Flat mode (was "Recruiter mode"): a button beside Light / Dark that switches to the original portfolio (recruiter/) --
 # Both sit in one top-right group. Recruiter mode shows everywhere (Info is the landing page); the toggle hides itself outside Playground and Works.
 sub('(0,$.jsx)(`button`,{...m(`61c4be3b24e2`),className:`theme-ico',
     '(0,$.jsxs)(`div`,{className:`zz-topright`,children:['
-    '(0,$.jsx)(`a`,{className:`zz-recruiter`,href:`recruiter/`,title:`Switch to the original portfolio`,children:`Recruiter mode`}),'
+    '(0,$.jsx)(`a`,{className:`zz-recruiter`,href:`recruiter/`,title:`Switch to the flat portfolio`,children:`Flat mode`}),'
     '(0,$.jsx)(`button`,{...m(`61c4be3b24e2`),className:`theme-ico')
-sub('children:`Dark`},`d`)]}),(0,$.jsxs)(`div`,{...m(`e8040b71c573`),className:`corner-bl`',
-    'children:`Dark`},`d`)]})]}),(0,$.jsxs)(`div`,{...m(`e8040b71c573`),className:`corner-bl`')
+sub(']})}),(0,$.jsxs)(`div`,{...m(`e8040b71c573`),className:`corner-bl`',
+    ']})})]}),(0,$.jsxs)(`div`,{...m(`e8040b71c573`),className:`corner-bl`')
 
 # ---- 16. Smoother: a lighter render ---------------------------------------------------------
 # Draw the 3D scene at no more than 1.5x the screen's resolution (it was up to 1.75x).
@@ -293,7 +313,8 @@ sub('this.glyphs=new Pg(r?200:420,r_)', 'this.glyphs=new Pg(r?140:320,r_)')
 
 # ---- 21. Touch drags turn the view further -------------------------------------------------------
 # The drag is scaled by the screen's height, so on a tall, narrow phone a full-width swipe barely turned it.
-TOUCH_GAIN = 2.5
+# 7.5x a mouse drag (it was 2.5x; tripled on 2026-11-13).
+TOUCH_GAIN = 7.5
 sub('let t=e.clientX-this.drag.x,n=e.clientY-this.drag.y;',
     f'let k=e.pointerType===`touch`?{TOUCH_GAIN}:1,t=(e.clientX-this.drag.x)*k,n=(e.clientY-this.drag.y)*k;')
 
@@ -438,6 +459,99 @@ sub('.to(s,{"--unf":`0deg`,duration:.3,ease:`sine.out`}));let l=new Map',
     '.to(s,{"--unf":`0deg`,duration:.3,ease:`sine.out`}));'
     'document.documentElement.classList.contains(`zz-booting`)&&(o.forEach(e=>e.pause(0)),addEventListener(`zz:booted`,()=>o.forEach(e=>e.restart(!0)),{once:!0}));'
     'let l=new Map')
+
+# ---- 30. Zooming out of Works opens Playground; zooming well into Playground opens Works --------------------------
+# Works rests 37 units back (c_ to l_). A pinch or ctrl-scroll out that will carry the camera past 1.5 times that,
+# counting the zoom's own momentum (each frame adds zoomVel, which keeps 90% of itself, so it travels about
+# e^(10 zoomVel) further), switches to Playground just as its nav button does. So a quick flick goes over at once
+# and a slow zoom when it gets there. The camera stays where it is, so the zoom carries on into Playground's field.
+# On phones the dial may have glided in to a card further back than 37; the threshold counts from there instead.
+sub('this.zzGlide={node:t,dist:c,', 'this.zzSeen=c,this.zzGlide={node:t,dist:c,')
+sub('this.flying||(this.zzGlideStep(e),this.nav.update(e));', 'this.flying||(this.zzGlideStep(e),this.nav.update(e),this.zzOut(e));')
+# The nav button re-centres the camera's orbit on a point 6 units ahead and stops any zoom (the camera itself doesn't
+# move). Done mid-pinch that would stall the zoom and make the rest of it 8 times slower, so the orbit point and
+# zoom speed are put back as they were; once the zoom has come to rest, the orbit moves to 6 ahead as the button
+# would have, and Playground handles as it always does.
+#
+# The other way: in Playground, one continuous zoom in (pinch or ctrl-scroll; a pause over 0.25s or any zoom out
+# starts the count again) that adds up to 5 times closer opens Works. 5x in one go is a deliberate push (about a
+# 170px spread of two fingers on a phone); zooming in to look at a piece stays well short of it.
+#
+# Works then appears where the camera already is, with no flight: the whole Works layout is anchored (zzW, applied in
+# bigSpot) so that from the camera's current place and angle it is framed exactly as Works' own starting view frames
+# it, and the camera's orbit point is set to match. The cards fade in, grow from 70% and rise into place with the
+# usual mode crossfade, without the glitch burst (zzQuiet). For a second after, zooming in further is ignored and the
+# camera can't come closer than Works' own distance, so the works always arrive at their usual size.
+# Works' nav button (and recentring) still lead to the usual Works view: the button resets the anchor and flies home.
+ZOOM_IN_TO_WORKS = 5
+sub('return t.set(o*Math.cos(a)-s*Math.sin(a),r[1]+Math.sin(i*.26+e*1.3)*.5,o*Math.sin(a)+s*Math.cos(a)),t}bigSize',
+    'return t.set(o*Math.cos(a)-s*Math.sin(a),r[1]+Math.sin(i*.26+e*1.3)*.5,o*Math.sin(a)+s*Math.cos(a)),this.zzW&&t.applyMatrix4(this.zzW),t}bigSize')
+# The cards' float and their rise as they fade in follow the anchored layout's up, not the world's.
+sub('r.sprite.position.set(s.x,s.y+c-(1-i)*6,s.z)',
+    'let K=c-(1-i)*6,U=this.zzU;U?r.sprite.position.set(s.x+U.x*K,s.y+U.y*K,s.z+U.z*K):r.sprite.position.set(s.x,s.y+K,s.z)')
+sub('burst(e){this.reduced||(this.glitchAmt=Math.max(this.glitchAmt,e))}',
+    'burst(e){this.reduced||performance.now()-(this.zzQuiet||0)<600||(this.glitchAmt=Math.max(this.glitchAmt,e))}')
+sub('recenter(){this.mode===`works`?this.flyTo(c_,l_):this.flyTo(o_,s_)}',
+    'recenter(){this.mode===`works`?this.flyTo(this.zzW?c_.clone().applyMatrix4(this.zzW):c_,this.zzW?l_.clone().applyMatrix4(this.zzW):l_):this.flyTo(o_,s_)}')
+sub('e===`works`&&this.flyTo(c_,l_))}', 'e===`works`&&(performance.now()-(this.zzNoFly||0)<500||(this.zzW=this.zzU=null,this.flyTo(c_,l_))))}')
+# The controls stamp each zoom input (zzZt), so the count runs only while the fingers are zooming (and a quarter
+# second after): two separate pinches with a pause between never add up, even while the first one's momentum runs on.
+sub('if(e.ctrlKey){this.zoomVel+=', 'if(e.ctrlKey){this.zzZt=performance.now(),this.zoomVel+=')
+sub('this.zoomVel+=(this.pinch.d-n)*.0012,', 'this.zzZt=performance.now(),this.zoomVel+=(this.pinch.d-n)*.0012,')
+sub('dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)',
+    'zzOut(e){let N=this.nav,T=performance.now(),A=this.zzPush||(this.zzPush={L:0});'
+    # The second after Works appears: no zooming in past its own distance.
+    'if(T-(this.zzCalm||0)<1000&&this.mode===`works`){N.zoomVel<0&&(N.zoomVel=0);let h=c_.distanceTo(l_);N.dist<h&&(N.dist=h)}'
+    # Into Works.
+    'if(this.mode===`playground`&&!N.locked&&!this.focus&&!this.zzGlide&&!document.querySelector(`.case.is-open`)){'
+    'let z=N.zoomVel;T-(N.zzZt||0)>250||z>1e-4?A.L=0:z<-1e-4&&(A.L+=-z*Math.min(1,(e||1/60)*60));'
+    f'if(A.L>Math.log({ZOOM_IN_TO_WORKS})&&T-(this.zzOutT||0)>600){{A.L=0,this.zzOutT=T,this.zzRepivot=0,this.zzNoFly=this.zzQuiet=this.zzCalm=T;'
+    'let P=this.camera.position.clone(),Q=N.q.clone(),R=Q.clone().multiply(new Go().setFromRotationMatrix(new ms().lookAt(c_,l_,new J(0,1,0))).invert()),h=c_.distanceTo(l_);'
+    'this.zzW=new ms().makeTranslation(P.x,P.y,P.z).multiply(new ms().makeRotationFromQuaternion(R)).multiply(new ms().makeTranslation(-c_.x,-c_.y,-c_.z)),this.zzU=new J(0,1,0).applyQuaternion(R);'
+    'document.querySelector(`.c-nav [data-showcase="nav-works"]`)?.click();'
+    'N.stop(),N.q.copy(Q),N.target.copy(P).addScaledVector(new J(0,0,-1).applyQuaternion(Q),h),N.dist=h;return}'
+    '}else A.L=0;'
+    # Playground's usual orbit once the zoom has settled.
+    'if(this.zzRepivot&&this.mode===`playground`&&!this.focus&&!N.pinch&&!N.drag&&Math.abs(N.zoomVel)<2e-4&&N.rotVel.lengthSq()<1e-6&&N.panVel.lengthSq()<1e-6){'
+    'this.zzRepivot=0;let f=new J(0,0,-1).applyQuaternion(N.q),p=this.camera.position.clone();N.setFrom(p,p.clone().addScaledVector(f,6),new J(0,1,0).applyQuaternion(N.q))}'
+    # Out of Works.
+    'if(this.zzOutMode!==this.mode)this.zzOutMode=this.mode,this.zzSeen=0;'
+    'if(this.mode!==`works`||this.focus||this.zzGlide||N.locked||document.querySelector(`.case.is-open`))return;'
+    'let h=Math.max(c_.distanceTo(l_),this.zzSeen||0);'
+    'if(N.dist*Math.exp(10*Math.max(0,N.zoomVel))>h*1.5&&T-(this.zzOutT||0)>1500){this.zzOutT=T,A.L=0;'
+    'let p=N.target.clone(),d=N.dist,z=N.zoomVel,q=N.q.clone();document.querySelector(`.c-nav [data-showcase="nav-playground"]`)?.click();'
+    'N.target.copy(p),N.dist=d,N.zoomVel=z,N.q.copy(q),this.zzRepivot=1}}'
+    'dispose(){this.disposed=!0,cancelAnimationFrame(this.raf)')
+
+# ---- 31. The name on the Info card has no entrance of its own ------------------------------------------------------
+# Its letters used to rise one by one with a fade; now the name is simply there with its card (which still unfolds).
+sub(',Mi.fromTo(a,{yPercent:105,autoAlpha:0},{yPercent:0,autoAlpha:1,duration:n?0:.7,stagger:.04,ease:`expo.out`,delay:n?0:.75})]', ']')
+
+# ---- 32. More floating pixel loops: flat colour tiles after the reference sheet ------------------------------------
+# src/tiles.js adds 13 tiles (spinning square spiral, play, sliding checkerboard, brick rows, tunnel, beating heart,
+# bobbing question mark, exclamation, chat bubble typing, marching chevrons, breathing diamond, nudging arrow,
+# scrolling bands) to the loops' list. Each makes as many textures as it has colourways (zzN, 1 or 2) instead of the
+# usual 4 random ones, which keeps the extra texture memory to about 8.5MB.
+tiles = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'tiles.js')).read()
+assert '`' not in tiles
+sub('Eg=[`#0101fd`,`#fefe02`,`#fe01fd`,`#01fe02`,`#00ffff`];function Dg(e)',
+    'Eg=[`#0101fd`,`#fefe02`,`#fe01fd`,`#01fe02`,`#00ffff`];\n' + tiles + '\nfunction Dg(e)')
+sub('Tg.forEach(e=>{for(let t=0;t<4;t++){', 'Tg.forEach(e=>{for(let t=0;t<(e.zzN||4);t++){')
+
+# ---- 33. Each Playground piece's little marker sits off one of the piece's edges, and its lines meet it ----------
+# It used to sit just under the middle of every picture. Now each piece has its own spot, taken from its id so it is
+# the same every visit: off the bottom, top, left or right edge, 12-88% of the way along, a tenth of the picture's
+# height out from the border. It follows the picture's size and its slight tilt when pointed at. (The picture is
+# anchored 6% of its height below its bottom edge, centred: center (.5, -.06).) The coloured lines between pieces
+# run to the markers (they ran to the pictures' anchors, which is where the markers used to be).
+sub('r.marker?.position.copy(r.sprite.position),r.sprite.scale.set(',
+    'if(r.marker){let k=r.zzMk;if(!k){let h=0;for(let ch of String(r.work.id))h=h*31+ch.charCodeAt(0)|0;'
+    'h=Math.imul(h^h>>>16,73244475),h=Math.imul(h^h>>>16,73244475),h=(h^h>>>16)>>>0;k=r.zzMk={side:h&3,t:.12+(h>>>2)%1000/1000*.76}}'
+    'let w=u*r.aspect,g=.1*u,X=k.side<2?(k.t-.5)*w:k.side===2?-.5*w-g:.5*w+g,Y=k.side<2?(k.side?1.06*u+g:.06*u-g):(.06+k.t)*u,c0=Math.cos(d.rotation),s0=Math.sin(d.rotation);'
+    'r.marker.position.copy(r.sprite.position).add(new J(X*c0-Y*s0,X*s0+Y*c0,0).applyQuaternion(this.camera.quaternion))}'
+    'r.sprite.scale.set(')
+sub('n.copy(this.currentPos(a.a)).add(a.off),r.copy(this.currentPos(a.b)).add(a.off);',
+    'n.copy(a.a.marker?a.a.marker.position:this.currentPos(a.a)).add(a.off),r.copy(a.b.marker?a.b.marker.position:this.currentPos(a.b)).add(a.off);')
 
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()

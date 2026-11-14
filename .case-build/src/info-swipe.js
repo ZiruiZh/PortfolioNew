@@ -217,6 +217,10 @@ function bind(el) {
   el.addEventListener('click', event => {
     if (performance.now() < quietUntil) { event.preventDefault(); event.stopPropagation(); }
   }, true);
+  // The blur along the column's top edge (case-window.css) shows once the panels have scrolled under it.
+  const scrolled = () => el.classList.toggle('zz-scrolled', el.scrollTop > 2);
+  el.addEventListener('scroll', scrolled, { passive: true });
+  scrolled();
 }
 
 // ---- wider screens: a sideways scroll over the two columns ------------------------------------------

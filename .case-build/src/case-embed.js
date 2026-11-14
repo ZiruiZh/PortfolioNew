@@ -9,7 +9,7 @@ import './z-clicks.js';
 import './recruiter-prefetch.js';
 import './favicon.js';
 import './info-swipe.js';
-import { bindPull } from './case-pull.js';
+import './case-pull.js';
 
 const style = document.createElement('style');
 style.dataset.zzCase = '';
@@ -74,8 +74,6 @@ function build(node, key) {
       sheet.scrollBy({ top: event.deltaY * (event.deltaMode === 1 ? 16 : 1), behavior: 'instant' });
     }, { passive: false });
   }
-  // Past its top, the study pulls back down and closes (case-pull.js).
-  bindPull(sheet, margin);
   // Still loading its opening picture or video after 2.5s: the videos further down hold on their posters (they can
   // still be played), and the rest of this visit's case studies open still. The opening video keeps playing.
   if (!reducedQuery.matches) setTimeout(() => {

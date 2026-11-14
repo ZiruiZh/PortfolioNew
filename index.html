@@ -59,8 +59,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;600;700&family=Chivo+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <script>/* Sandboxed previews and embeds block browser storage; fall back to memory so the page still starts. */(function(){function m(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}["localStorage","sessionStorage"].forEach(function(n){try{window[n].getItem("_")}catch(e){try{Object.defineProperty(window,n,{value:m(),configurable:true})}catch(_){}}})})();</script>
-    <script type="module" src="./work/case-embed.js?v=1794511835"></script>
-    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794511835"></script>
+    <script type="module" src="./work/case-embed.js?v=1794632270"></script>
+    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794632270"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-C-HYMxcf.css">
   </head>
   <body>
@@ -159,53 +159,72 @@
     drawSky(0);
     if (!still) requestAnimationFrame(loop);
 
-    // ---- the pixel loop, with the scene's grain ------------------------------------------------------------
+    // ---- the mark: the favicon's crosses, with crisp analog grain --------------------------------------------
+    // Drawn straight in device pixels (no smoothing), on the scene's 16 x 16 grid: 7px cells (5px on small phones),
+    // so 112px across.
     var N = 16;
-    var cell = innerWidth < 480 ? 3 : 4, size = N * cell, width = size;
-    glyphs.width = width * dpr; glyphs.height = size * dpr;
-    glyphs.style.width = width + 'px'; glyphs.style.height = size + 'px';
+    var cell = innerWidth < 480 ? 5 : 7, size = N * cell;
+    glyphs.width = glyphs.height = Math.round(size * dpr);
+    glyphs.style.width = glyphs.style.height = size + 'px';
     var ctx = glyphs.getContext('2d');
-    ctx.scale(dpr, dpr);
-    // Grain, like the scene's pixel loops: per-pixel noise, coarser blotches, rare bright specks, worn edges.
-    var PW = glyphs.width, PH = glyphs.height, noise = new Float32Array(PW * PH), wear = new Float32Array(PW * PH);
-    (function () {
-      var r = rng(4242), bw = Math.ceil(PW / 6), blotch = new Float32Array(bw * Math.ceil(PH / 6));
-      for (var b = 0; b < blotch.length; b++) blotch[b] = r() - 0.5;
-      for (var y = 0; y < PH; y++) for (var x = 0; x < PW; x++) {
-        var k = y * PW + x;
-        noise[k] = (r() - 0.5) * 46 + blotch[Math.floor(y / 6) * bw + Math.floor(x / 6)] * 26 + (r() < 0.018 ? 70 : 0);
-        wear[k] = r();
-      }
+    var PW = glyphs.width, PH = glyphs.height, px = PW / N;
+    var COLOURS = ['#ff1a3c', '#12a9e8', '#fccc0a'];
+    // Paper-like blotches stay put; the fine grain and the edge spray are new on every redraw, so the edges shimmer.
+    var blotch = (function () {
+      var r = rng(4242), bw = Math.ceil(PW / 6), b = new Float32Array(bw * Math.ceil(PH / 6));
+      for (var i = 0; i < b.length; i++) b[i] = r() - 0.5;
+      return function (x, y) { return b[Math.floor(y / 6) * bw + Math.floor(x / 6)]; };
     })();
-    function texture() {
-      var img = ctx.getImageData(0, 0, PW, PH), d = img.data;
+    // The motion: eight steady steps a second, like the scene's loops. Every fourth step a new plus appears at the
+    // centre; the next step it splits into four crosses three cells out (where they stand clear of each other), and
+    // they move one cell further out each step, like ripples. Every plus keeps at least an empty cell around it.
+    // Towards the rim the pixels drop away at random (more the further out), so each set dissolves at the edge.
+    var STEP = 125, GAP = 4, AGES = 5;
+    function radius(age) { return age === 0 ? 0 : age + 2; } // 0, then 3, 4, 5, 6
+    function cross(put, x, y, c) { for (var a = -1; a <= 1; a++) { put(x + a, y, c); put(x, y + a, c); } }
+    var REACH = Math.max(2, Math.round(px * 0.45)); // how far the edge spray reaches, in device pixels
+    function render(step) {
+      ctx.clearRect(0, 0, PW, PH);
+      var put = function (x, y, c) {
+        if (x < 0 || y < 0 || x >= N || y >= N) return;
+        ctx.fillStyle = c; ctx.fillRect(Math.round(x * px), Math.round(y * px), Math.round(px), Math.round(px));
+      };
+      // Older (outer) sets first.
+      for (var age = AGES - 1; age >= 0; age--) {
+        if ((step - age) % GAP) continue;
+        var r = radius(age), g = (step - age) / GAP; // g: which set this is, counting from the first
+        [[7, 7 - r], [7 + r, 7], [7, 7 + r], [7 - r, 7]].forEach(function (q, i) { cross(put, q[0], q[1], COLOURS[((i + g) % 3 + 3) % 3]); });
+      }
+      var img = ctx.getImageData(0, 0, PW, PH), d = img.data, src = new Uint8ClampedArray(d);
+      var at = function (x, y) { return ((Math.min(PH - 1, Math.max(0, y)) * PW) + Math.min(PW - 1, Math.max(0, x))) * 4; };
       for (var y = 0; y < PH; y++) for (var x = 0; x < PW; x++) {
-        var k = y * PW + x, p = k * 4;
-        if (d[p + 3] < 8) continue;
-        var n = noise[k];
-        d[p] = Math.max(0, Math.min(255, d[p] + n)); d[p + 1] = Math.max(0, Math.min(255, d[p + 1] + n)); d[p + 2] = Math.max(0, Math.min(255, d[p + 2] + n));
-        var edge = (x > 0 && d[p - 1] < 8) || (x < PW - 1 && d[p + 7] < 8) || (y > 0 && d[p - PW * 4 + 3] < 8) || (y < PH - 1 && d[p + PW * 4 + 3] < 8);
-        if (edge && wear[k] < 0.35) d[p + 3] = Math.floor(d[p + 3] * (0.35 + wear[k]));
-        else if (wear[k] > 0.988) d[p + 3] = Math.floor(d[p + 3] * 0.5);
+        var o = (y * PW + x) * 4, a = src[o + 3];
+        // Near an edge (something different within reach), a pixel may take a nearby pixel's colour, or its
+        // emptiness: specks scatter outward and the shape's border is eaten into. Crisp, pixel by pixel.
+        if (src[at(x - REACH, y) + 3] !== a || src[at(x + REACH, y) + 3] !== a || src[at(x, y - REACH) + 3] !== a || src[at(x, y + REACH) + 3] !== a ||
+            (a && (src[at(x - REACH, y)] !== src[o] || src[at(x, y - REACH)] !== src[o]))) {
+          var s2 = at(x + Math.round((Math.random() + Math.random() - 1) * REACH * 1.6), y + Math.round((Math.random() + Math.random() - 1) * REACH * 1.6));
+          if (Math.random() < 0.55) { d[o] = src[s2]; d[o + 1] = src[s2 + 1]; d[o + 2] = src[s2 + 2]; d[o + 3] = src[s2 + 3]; }
+        }
+        if (d[o + 3] < 8) continue;
+        // The rim: from 4 cells out to the edge, more and more pixels drop away.
+        var dc = Math.max(Math.abs(x / px - 7.5), Math.abs(y / px - 7.5));
+        if (dc > 4 && Math.random() < Math.min(1, (dc - 4) / 3.6)) { d[o + 3] = 0; continue; }
+        var n = (Math.random() - 0.5) * 50 + blotch(x, y) * 26 + (Math.random() < 0.018 ? 70 : 0);
+        d[o] = Math.max(0, Math.min(255, d[o] + n)); d[o + 1] = Math.max(0, Math.min(255, d[o + 1] + n)); d[o + 2] = Math.max(0, Math.min(255, d[o + 2] + n));
       }
       ctx.putImageData(img, 0, 0);
     }
-    function cross(put, x, y, c) { for (var a = -1; a <= 1; a++) { put(x + a, y, c); put(x, y + a, c); } }
-    // The scene's "crosses growing out" loop (the favicon): four crosses spread from a centre dot and fold back in,
-    // eight frames on its 16 x 16 grid.
-    function crosses(put, t, c) { var r = 2 + [0, 1, 2, 3, 3, 2, 1, 0][t]; [[7, 7 - r], [7 + r, 7], [7, 7 + r], [7 - r, 7]].forEach(function (q, i) { cross(put, q[0], q[1], c[(i + t) % c.length]); }); put(7, 7, c[(t + 2) % c.length]); }
-    var COLOURS = ['#ff1a3c', '#12a9e8', '#fccc0a'];
-    var tick = 0;
-    function drawGlyphs() {
-      ctx.clearRect(0, 0, width, size);
-      crosses(function (x, y, c) {
-        if (x < 0 || y < 0 || x >= N || y >= N) return;
-        ctx.fillStyle = c; ctx.fillRect(x * cell, y * cell, cell, cell);
-      }, still ? 3 : (tick + 4) % 8, COLOURS);
-      texture();
+    var started = performance.now(), lastDraw = -1e9, lastStep = -1;
+    function animate(now) {
+      if (!running) return;
+      requestAnimationFrame(animate);
+      var step = Math.floor((now - started) / STEP);
+      // Redraw on every step, and about twelve times a second for the grain.
+      if (step !== lastStep || now - lastDraw > 83) { lastStep = step; lastDraw = now; render(step); }
     }
-    drawGlyphs();
-    var timer = still ? 0 : setInterval(function () { tick++; drawGlyphs(); }, 125); // eight frames a second, like the scene
+    if (still) render(1); else requestAnimationFrame(animate);
+    var timer = 0;
 
     // ---- progress: not shown, but kept for screen readers --------------------------------------------------
     var shown = 0;
