@@ -247,25 +247,21 @@ webring = ('(0,$.jsxs)(`span`,{className:`zz-webring`,children:['
 # The x.com handle loses its trailing arrow; the webring follows it.
 sub('e.label,` `,f(`e2ffc48f1d6d`,`↗`)))]})', 'e.label)),' + webring + ']})')
 
-# ---- 14. Light / dark toggle: a 5 x 5 pixel block, sun in light mode, crescent moon in dark -------------------
-# (Before: a half-filled circle, the words "Light Dark", a rotating square.) Switching flips the pixels that differ
-# one at a time in a fixed scattered order over about 0.25s, like a flip-dot sign; pixels both shapes share stay lit.
-# Each pixel is a 3px square (15px in all); case-window.css shows the right set and carries each pixel's delay (--d).
-SUN = ['X.X.X', '.XXX.', 'XXXXX', '.XXX.', 'X.X.X']
-MOON = ['.XXX.', 'XX...', 'XX...', 'XX...', '.XXX.']
-TT_PIXELS = []
-for y in range(5):
-    for x in range(5):
-        kinds = ('s' if SUN[y][x] == 'X' else '') + ('m' if MOON[y][x] == 'X' else '')
-        if not kinds:
-            continue
-        delay = ((x * 7 + y * 11) % 25) * 11  # a fixed scattered order, 0-264ms
-        cls = ' '.join(['zz-px'] + list(kinds))
-        TT_PIXELS.append(f'(0,$.jsx)(`rect`,{{x:`{x*3}`,y:`{y*3}`,width:`3`,height:`3`,fill:`currentColor`,className:`{cls}`,style:{{"--d":`{delay}ms`}}}})')
+# ---- 14. Light / dark toggle: a bold asterisk, and a bold crescent in dark mode -------------------------------------
+# After a sheet of geometric logo marks (2026-11-14): light mode is a chunky six-armed asterisk; dark mode a crescent
+# of the same weight (it was the asterisk in a rounded frame, which didn't work). Switching, one spins away and
+# shrinks as the other swings in on a springy ease. At rest the asterisk ticks round a sixth of a turn every four
+# seconds (with six arms, seamless) and the crescent rocks a little on the same beat (case-window.css). (Before: a
+# 5 x 5 pixel sun and moon; before that, a half-filled square and the words "Light Dark".)
+TT_ARMS = ','.join(f'(0,$.jsx)(`rect`,{{x:`6.55`,y:`1.3`,width:`2.9`,height:`13.4`,transform:`rotate({a} 8 8)`}})' for a in (0, 60, 120))
+# The crescent: a 6.6 circle at the middle with a 5.4 circle 4.2 up and right taken out of it (the path runs along the
+# big circle's long arc between the two crossing points, then back along the small one's).
+TT = ('(0,$.jsx)(`g`,{className:`zz-tt-mw`,children:(0,$.jsx)(`path`,{className:`zz-tt-m`,d:`M6.89 1.49A6.6 6.6 0 1 0 14.51 9.11A5.4 5.4 0 0 1 6.89 1.49Z`,fill:`currentColor`})}),'
+      '(0,$.jsx)(`g`,{className:`zz-tt-spin`,children:(0,$.jsxs)(`g`,{className:`zz-tt-a`,fill:`currentColor`,children:[' + TT_ARMS + ']})})')
 
 sub('children:(0,$.jsxs)(`svg`,{...m(`bbb0f5c93433`),viewBox:`0 0 14 14`,width:`14`,height:`14`,"aria-hidden":`true`,children:[(0,$.jsx)(`rect`,{...m(`480e8dfd63c2`),x:`0.5`,y:`0.5`,width:`13`,height:`13`,fill:`none`,stroke:`currentColor`}),(0,$.jsx)(`path`,{...m(`4a74c637271b`),className:`half`,d:`M0.5 0.5 L13.5 13.5 L0.5 13.5 Z`,fill:`currentColor`})]})})',
-    'children:(0,$.jsxs)(`svg`,{className:`zz-tt`,viewBox:`0 0 15 15`,width:`15`,height:`15`,shapeRendering:`crispEdges`,"aria-hidden":`true`,children:['
-    + ','.join(TT_PIXELS) + ']})})')
+    'children:(0,$.jsxs)(`svg`,{className:`zz-tt`,viewBox:`0 0 16 16`,width:`16`,height:`16`,"aria-hidden":`true`,children:['
+    + TT + ']})})')
 
 # ---- 15. Flat mode (was "Recruiter mode"): a button beside Light / Dark that switches to the original portfolio (recruiter/) --
 # Both sit in one top-right group. Recruiter mode shows everywhere (Info is the landing page); the toggle hides itself outside Playground and Works.
@@ -309,7 +305,8 @@ sub('!f&&d.t>.7&&(f=!0,this.ev.onOpen(e))', '!f&&d.t>.97&&(f=!0,this.ev.onOpen(e
 
 # ---- 20. Lighter: thumbnails for lattice textures, fewer pixel loops --------------------------
 sub('c.src=`./${r.img}`,o.userData.node=s', 'c.src=`./${r.thumb||r.img}`,o.userData.node=s')
-sub('this.glyphs=new Pg(r?200:420,r_)', 'this.glyphs=new Pg(r?140:320,r_)')
+# (2026-11-14: fewer again, 320 to 190 and 140 to 90 on phones; the field had become cluttered.)
+sub('this.glyphs=new Pg(r?200:420,r_)', 'this.glyphs=new Pg(r?90:190,r_)')
 
 # ---- 21. Touch drags turn the view further -------------------------------------------------------
 # The drag is scaled by the screen's height, so on a tall, narrow phone a full-width swipe barely turned it.
@@ -423,7 +420,12 @@ sub('p=(s?14:8)*(1+(.55+g*.9)*l)+g*2,m=f*(s?.85:.3+.35*l*g+.15*l),h=Math.max(-10
     'a.strokeStyle=`rgba(${r},${m.toFixed(3)})`,a.lineWidth=s?1.25:1,a.beginPath(),a.moveTo(o-p,t+h),a.lineTo(o,t),a.stroke()',
     'k=Math.max(0,1-Math.abs(t-i)/__),q=k*k*(3-2*k),P=(s?14:8)*(1+(.3+g*.45)*l)+g*2,M=f*(s?.42:.13+.15*l*g+.07*l),L=s?1.25:1,'
     # Round ends, drawn half a thickness in from each end so every bar keeps its exact length.
-    'W=L+(Z.zzH-L)*q,N=P+(Z.zzW-P)*q,m=M+(.95-M)*q;a.strokeStyle=`rgba(${r},${m.toFixed(3)})`,a.lineWidth=W,a.lineCap=`round`,'
+    # The centre bar is always the long one, but only thick and strong while the dial is pointed at, near the pointer
+    # or dragged (g, which eases between 0 and 1); otherwise it has the other bars' thickness and opacity.
+    # ...and, as it thickens, it takes the cursor's own colour (its tint, window.zzCur, shared by info-swipe.js; with no
+    # tint the cursor is the ink colour, which the bar already is).
+    'W=L+(Z.zzH-L)*q*g,N=P+(Z.zzW-P)*q,m=M+(.95-M)*q*g,Y=q*g,C3=window.zzCur,R=Y>0&&C3?r.split(`,`).map((v,i)=>Math.round(+v+(C3[i]-v)*Y)).join(`,`):r;'
+    'a.strokeStyle=`rgba(${R},${m.toFixed(3)})`,a.lineWidth=W,a.lineCap=`round`,'
     'a.beginPath(),a.moveTo(o-N+W/2,t),a.lineTo(o-W/2,t),a.stroke()')
 
 # ---- 28. Info opens further back ----------------------------------------------------------------------
@@ -448,11 +450,15 @@ sub('s.set(p*_*v,m*_*v,h*_*v).add(this.cloudCenter)', 's.set(p*_*v,m*_*v,h*_*v).
 sub('r.sprite.material.opacity=(this.focus&&this.focus!==r?.3:1)*(r===this.focus||r===this.grab.node?1:h)*g',
     'r.sprite.material.opacity=(this.focus&&this.focus!==r?.3:1)*(r===this.focus||r===this.grab.node?1:h)*g*Math.min(1,this.zzIn*1.5)')
 # Each pixel loop keeps its size (b) and a start offset (dl) taken from its place in the list, so no random draw moves.
-sub('this.items.push({s:i,p:s,ph:n()*6.28,sp:.2+n()*.6})', 'this.items.push({s:i,p:s,ph:n()*6.28,sp:.2+n()*.6,b:o,dl:this.items.length*.618%1*.55})')
+sub('this.items.push({s:i,p:s,ph:n()*6.28,sp:.2+n()*.6})', 'this.items.push({s:i,p:s,ph:n()*6.28,sp:.2+n()*.6,b:o,dl:this.items.length*.618%1*.55,i:this.items.length})')
 sub('for(let r of this.items)r.s.position.set(o(r.p.x+Math.sin(e*.2*r.sp+r.ph)*1.5*n,t.x),o(r.p.y+e*.25*r.sp*n,t.y),o(r.p.z+Math.cos(e*.17*r.sp+r.ph)*1.5*n,t.z))}}',
-    'let k=this.zzGrow??1;for(let r of this.items){r.s.position.set(o(r.p.x+Math.sin(e*.2*r.sp+r.ph)*1.5*n,t.x),o(r.p.y+e*.25*r.sp*n,t.y),o(r.p.z+Math.cos(e*.17*r.sp+r.ph)*1.5*n,t.z));'
-    'if(r.zg!==1){let q=Math.min(1,Math.max(0,(k-r.dl)/.45)),w=q<1?1+2.70158*(q-1)**3+1.70158*(q-1)**2:1;r.s.scale.set(r.b*w,r.b*w,1),r.zg=q<1?q:1}}}}')
-sub('this.glyphs.update(t,r,n)', '(this.glyphs.zzGrow=this.zzIn,this.glyphs.update(t,r,n))')
+    # (Section 37: a loop whose texture isn't drawn yet stays hidden, and grows in over 0.45s once it is, from ra.)
+    'let k=this.zzGrow??1,T=this.zzThin;for(let r of this.items){if(!r.s.material.map.zzReady){r.s.visible=!1;continue}r.ra??=e;'
+    'r.s.position.set(o(r.p.x+Math.sin(e*.2*r.sp+r.ph)*1.5*n,t.x),o(r.p.y+e*.25*r.sp*n,t.y),o(r.p.z+Math.cos(e*.17*r.sp+r.ph)*1.5*n,t.z));'
+    # In Works (zzThin) two in three of them shrink away and come back when Works is left (th, about 0.2s each way).
+    'let h=r.th??1,g=T&&r.i%3?0:1;h+=(g-h)*.08;Math.abs(g-h)<.003&&(h=g);'
+    'if(r.zg!==1||h!==r.th){let q=Math.min(1,Math.max(0,(k-r.dl)/.45),Math.max(0,(e-r.ra)/.45)),w=q<1?1+2.70158*(q-1)**3+1.70158*(q-1)**2:1;r.s.scale.set(r.b*w*h,r.b*w*h,1),r.s.visible=h>.003&&q>0,r.zg=q<1?q:1}r.th=h}}}')
+sub('this.glyphs.update(t,r,n)', '(this.glyphs.zzGrow=this.zzIn,this.glyphs.zzThin=this.mode===`works`,this.glyphs.update(t,r,n))')
 # The Info cards' own entrance (sections rising, the name card unfolding) waits for the loader instead of playing
 # underneath it.
 sub('.to(s,{"--unf":`0deg`,duration:.3,ease:`sine.out`}));let l=new Map',
@@ -533,11 +539,10 @@ sub(',Mi.fromTo(a,{yPercent:105,autoAlpha:0},{yPercent:0,autoAlpha:1,duration:n?
 # ---- 32. More floating pixel loops: flat colour tiles after the reference sheet ------------------------------------
 # src/tiles.js adds 12 tiles (spinning square spiral, play, sliding checkerboard, brick rows, tunnel, beating heart,
 # bobbing question mark, exclamation, marching chevrons, breathing diamond, nudging arrow, scrolling bands) to the
-# loops' list, then 16 smooth shapes after a second set of references (signage arrow, scalloped badge, VHS stripes,
-# halftone wave, four-leaf blob, plus in a disc, sunset disc, daisy, burst, slot switch, U-turn route, knobbly cross,
-# four arrows closing in, wire globe, six dots, breathing rounded squares). Each makes as many textures as it has
-# colourways (zzN, 1 or 2) instead of the usual 4 random ones: 35 in all, about the 20 the five removed loops below
-# made, plus 15.
+# loops' list, then 15 smooth shapes after a second set of references (signage arrow, scalloped badge, VHS stripes,
+# halftone wave, four-leaf blob, plus in a disc, sunset disc, burst, slot switch, U-turn route, knobbly cross, four
+# arrows closing in, wire globe, six dots, breathing rounded squares; the daisy was taken out, 2026-11-14). Each makes
+# as many textures as it has colourways (zzN, 1 or 2) instead of the usual 4 random ones: 34 in all.
 SRC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src')
 shapes = open(os.path.join(SRC_DIR, 'shapes.js')).read()  # the smooth shapes, shared with the loading screen
 tiles = shapes + '\n' + open(os.path.join(SRC_DIR, 'tiles.js')).read()
@@ -607,6 +612,23 @@ sub('resize=()=>{this.zzDirty=!0;let e=this.el.clientWidth,t=this.el.clientHeigh
     'V.style.cssText=`position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none`,V=Math.min(t,V.offsetHeight||t);'
     'this.renderer.setSize(e,t),this.composer?.setSize(e,t),this.camera.fov=e<700?72:60,'
     't-V>1?this.camera.setViewOffset(e,V,0,0,e,t):(this.camera.aspect=e/t,this.camera.clearViewOffset()),this.camera.updateProjectionMatrix();')
+
+# ---- 37. The floating loops' textures are drawn a slice at a time --------------------------------------------------
+# Drawing all of them (83 strips of 8 frames, each roughed and grained) took about 0.9s of unbroken work on a laptop,
+# more on a phone, right while the loading intro plays, so the intro froze. Now each strip's canvas and texture are
+# made at once but drawn later, one frame (or the strip's grain) per job, from a queue worked through at the start of
+# each animation frame for at most 5ms while the page is loading and 8ms after. When a strip is finished its texture
+# and the eight per-frame copies the loops use are marked ready and uploaded; until then the loops using it stay
+# hidden (section 21). Jobs keep their order, so the loops come out exactly as before.
+sub('function Ng(e,t){let n=document.createElement(`canvas`);n.width=1024,n.height=xg;let r=n.getContext(`2d`);for(let n=0;n<vg;n++){let i=n*xg;e((e,t,n)=>{e<0||t<0||e>=yg||t>=yg||(r.fillStyle=n,r.fillRect(i+e*bg,t*bg,bg,bg))},n,t,r,i)}Mg(r,n.width,n.height);let i=new fu(n);return i.colorSpace=to,i.magFilter=Ii,i.minFilter=zi,i.generateMipmaps=!1,i.repeat.set(1/vg,1),i}',
+    'var zzQ=[],zzQb=0;function zzRun(){if(zzQb||!zzQ.length)return;zzQb=1;let f=()=>{let T=performance.now(),B=document.documentElement.classList.contains(`zz-booting`)?5:8;'
+    'while(zzQ.length&&performance.now()-T<B)zzQ.shift()();zzQ.length?document.hidden?setTimeout(f,50):requestAnimationFrame(f):zzQb=0};document.hidden?setTimeout(f,50):requestAnimationFrame(f)}'
+    'function Ng(e,t){let n=document.createElement(`canvas`);n.width=1024,n.height=xg;let r=n.getContext(`2d`),i=new fu(n);i.colorSpace=to,i.magFilter=Ii,i.minFilter=zi,i.generateMipmaps=!1,i.repeat.set(1/vg,1);'
+    'for(let a=0;a<vg;a++)zzQ.push(()=>{let o=a*xg;e((X,Y,C)=>{X<0||Y<0||X>=yg||Y>=yg||(r.fillStyle=C,r.fillRect(o+X*bg,Y*bg,bg,bg))},a,t,r,o)});'
+    'zzQ.push(()=>{Mg(r,n.width,n.height),i.zzReady=!0,i.needsUpdate=!0;for(let c of i.zzC||[])c.zzReady=!0,c.needsUpdate=!0});zzRun();return i}')
+# Each strip's eight copies (one per frame, offset along the strip) are listed on it, so they can be marked ready.
+sub('this.phases=r.map(e=>Array.from({length:vg},(t,n)=>{let r=e.clone();return r.userData.k=n,r}))',
+    'this.phases=r.map(e=>Array.from({length:vg},(t,n)=>{let r=e.clone();return r.userData.k=n,(e.zzC||=[]).push(r),r}))')
 
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()

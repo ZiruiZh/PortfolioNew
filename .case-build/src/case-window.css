@@ -49,10 +49,22 @@
    flip-dot sign changing over. The site's old spins (on hover, and in light mode) are switched off. */
 .theme-ico,.theme-ico:hover,.theme-ico:active{transform:none!important}
 .theme-ico{width:auto!important;height:auto!important;top:15px!important;right:16px!important;display:flex!important;align-items:center;padding:2px 0!important;cursor:pointer}
-html body .theme-ico .zz-tt,html body .theme-ico:hover .zz-tt,html body .theme-ico.is-light .zz-tt{display:block;width:12.5px!important;height:12.5px!important;transform:none!important;transition:none!important;overflow:visible}
-.theme-ico .zz-px{opacity:0;transition:opacity 0s linear var(--d,0s)}
-.theme-ico.is-light .zz-px.s,.theme-ico:not(.is-light) .zz-px.m{opacity:1}
-@media (prefers-reduced-motion:reduce){.theme-ico .zz-px{transition:none}}
+html body .theme-ico .zz-tt,html body .theme-ico:hover .zz-tt,html body .theme-ico.is-light .zz-tt{display:block;width:13px!important;height:13px!important;transform:none!important;transition:none!important;overflow:visible}
+/* The asterisk and the crescent (bundle section 14). Light: the asterisk. Dark: the crescent. Switching, the one
+   leaving spins away and shrinks while the other swings in, both on a springy ease. */
+.theme-ico .zz-tt :is(.zz-tt-m,.zz-tt-mw,.zz-tt-spin,.zz-tt-a){transform-box:view-box;transform-origin:50% 50%}
+.theme-ico .zz-tt :is(.zz-tt-a,.zz-tt-m){transition:transform .6s cubic-bezier(.34,1.56,.64,1),opacity .22s ease-out}
+.theme-ico.is-light .zz-tt-a{transform:none;opacity:1}
+.theme-ico.is-light .zz-tt-m{transform:rotate(-150deg) scale(.3);opacity:0}
+.theme-ico:not(.is-light) .zz-tt-a{transform:rotate(180deg) scale(.2);opacity:0}
+.theme-ico:not(.is-light) .zz-tt-m{transform:none;opacity:1}
+/* At rest, every four seconds: the asterisk ticks round a sixth of a turn, quick and eased; the crescent rocks back a
+   little and settles. */
+.theme-ico .zz-tt-spin{animation:zz-tt-tick 4s cubic-bezier(.7,0,.2,1) infinite}
+@keyframes zz-tt-tick{0%,84%{transform:rotate(0deg)}100%{transform:rotate(60deg)}}
+.theme-ico .zz-tt-mw{animation:zz-tt-rock 4s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes zz-tt-rock{0%,76%{transform:rotate(0deg)}88%{transform:rotate(-16deg)}100%{transform:rotate(0deg)}}
+@media (prefers-reduced-motion:reduce){.theme-ico :is(.zz-tt-spin,.zz-tt-mw){animation:none}.theme-ico .zz-tt :is(.zz-tt-a,.zz-tt-m){transition:none}}
 
 /* Recruiter mode sits left of Light / Dark; together they make the top-right group. */
 .zz-topright{position:absolute;top:15px;right:16px;z-index:6;display:flex;align-items:center;gap:16px;pointer-events:auto;transition:opacity .3s}
@@ -187,6 +199,16 @@ html body .cs-scroll > .cs-sheet.cs-case{border-bottom-left-radius:0!important;b
 html body .dial .dial-needle,html body .dial:is(:hover,:focus-visible,.is-near,.is-drag,.is-merged) .dial-needle{
   width:var(--zz-bar-w)!important;height:var(--zz-bar-h)!important;margin-top:calc(var(--zz-bar-h) / -2)!important;border-radius:999px!important}
 html body .dial.is-tick .dial-needle{animation:none!important}
+/* At rest the centre bar is just the long bar drawn on the dial's canvas (as thin and faint as the others); the solid
+   needle over it shows only while the dial is pointed at, near the pointer or dragged. */
+html body .dial .dial-needle{opacity:0!important;transition:opacity .2s ease-out!important}
+html body .dial:is(:hover,:focus-visible,.is-near,.is-drag,.is-merged) .dial-needle{opacity:1!important}
+/* Pointed at, the centre bar is the cursor's own colour: the tint it has picked up (--zz-cur, copied from the cursor
+   by info-swipe.js), or the ink colour when it has none. The cursor keeps that tint when it snaps onto the bar (it used
+   to drop it there), so the two read as one. */
+html body .dial .dial-needle{background:var(--zz-cur,rgba(var(--ink),.95))!important}
+html body .zc.is-tinted.is-line .zc-body,html[data-theme=light] body .zc.is-tinted.is-line .zc-body,
+html body .zc.is-tinted.is-line.is-work .zc-body,html[data-theme=light] body .zc.is-tinted.is-line.is-work .zc-body{background:var(--zc-col)!important}
 html body .zc.is-line .zc-body{min-width:36px!important;width:36px!important;height:3px!important;top:-1.5px!important;left:-18px!important;border-radius:999px!important}
 
 /* The footer's time and links sit back at the nav's dimmed opacity (same fill, so the difference blend holds);

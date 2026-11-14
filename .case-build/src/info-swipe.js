@@ -305,12 +305,36 @@ function bindColumns() {
 }
 
 // ---- the home view (Info): a scroll or a drag on the open background goes to Works ----------------------------------
-// Anywhere outside the panels, the nav and the corners: about 40px of scrolling up or down (or sideways), or a drag of
-// more than 12px, opens Works as its nav button does. Scrolling over a panel still scrolls the panel. (A plain click
-// on the background already opens Works.)
+// Anywhere outside the panels, the nav, the corners and the cloud of works: about 40px of scrolling up or down (or
+// sideways), or a drag of more than 12px, opens Works as its nav button does. Scrolling over a panel still scrolls the
+// panel, and on the cloud a drag or a scroll turns the cloud, as the scene does there. (A plain click anywhere outside
+// the panels, the cloud included, opens Works too: the site's own handler.)
 const NOT_BACKGROUND = '.card, header, nav, button, a, input, label, .case, [role=dialog], .sg, .sg-col, .sg-stack, .dial, .zz-topright, .corner-bl, .corner-br';
 const atHome = () => !!document.querySelector('.cards.is-open:not(.case-open)');
 const onBackground = target => target instanceof Element && !target.closest(NOT_BACKGROUND);
+// Is a point on the cloud: within 40px of any of its cards, as they stand on screen right now?
+function onCloud(x, y) {
+  const S = window.zzScene;
+  if (!S?.cloud || S.cloud.v < 0.5) return false;
+  const cam = S.camera, V = cam.position.constructor, box = S.el.getBoundingClientRect(), PAD = 40;
+  cam.updateMatrixWorld();
+  const right = new V(1, 0, 0).applyQuaternion(cam.quaternion), up = new V(0, 1, 0).applyQuaternion(cam.quaternion);
+  for (const node of S.nodes) {
+    const sp = node.sprite;
+    if (!sp.visible || sp.material.opacity < 0.05) continue;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    // The card spans from 6% of its height above its anchor to 106% (its sprite's centre is (0.5, -0.06)).
+    for (const [a, b] of [[-0.5, 0.06], [0.5, 0.06], [-0.5, 1.06], [0.5, 1.06]]) {
+      const p = sp.position.clone().addScaledVector(right, a * sp.scale.x).addScaledVector(up, b * sp.scale.y).project(cam);
+      if (p.z > 1) continue;
+      const sx = box.left + (p.x + 1) / 2 * box.width, sy = box.top + (1 - p.y) / 2 * box.height;
+      x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+    }
+    if (x > x0 - PAD && x < x1 + PAD && y > y0 - PAD && y < y1 + PAD) return true;
+  }
+  return false;
+}
+window.zzOnCloud = onCloud;
 let homeLeft = 0, homeScroll = 0, homeScrollAt = 0, homeDrag = null;
 function leaveHome() {
   const now = performance.now();
@@ -319,7 +343,7 @@ function leaveHome() {
   showWorks();
 }
 addEventListener('wheel', event => {
-  if (!atHome() || busy || event.ctrlKey || !onBackground(event.target)) return;
+  if (!atHome() || busy || event.ctrlKey || !onBackground(event.target) || onCloud(event.clientX, event.clientY)) return;
   const now = performance.now(), unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
   if (now - homeScrollAt > 250) homeScroll = 0;
   homeScrollAt = now;
@@ -327,7 +351,7 @@ addEventListener('wheel', event => {
   if (homeScroll > 40) { homeScroll = 0; leaveHome(); }
 }, { passive: true, capture: true });
 addEventListener('pointerdown', event => {
-  homeDrag = atHome() && !busy && event.button === 0 && onBackground(event.target)
+  homeDrag = atHome() && !busy && event.button === 0 && onBackground(event.target) && !onCloud(event.clientX, event.clientY)
     ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
 }, true);
 addEventListener('pointermove', event => {
@@ -338,8 +362,32 @@ const endHomeDrag = event => { if (homeDrag?.id === event.pointerId) homeDrag = 
 addEventListener('pointerup', endHomeDrag, true);
 addEventListener('pointercancel', endHomeDrag, true);
 
+// ---- the cursor's colour, shared ---------------------------------------------------------------------------------------
+// The site's cursor (.zc) takes on the colour of the last coloured thing it was over (its tint, --zc-col). The dial's
+// centre bar takes that colour while pointed at, so it is copied out whenever the cursor changes: to --zz-cur on the
+// page (for the dial's needle, case-window.css) and window.zzCur as [r, g, b] (for the bars drawn on the dial's
+// canvas, bundle section 27). No tint: neither is set, and the bar keeps the ink colour, which is then the cursor's.
+let cursor = null, cursorCol = null;
+function shareCursor() {
+  const zc = document.querySelector('.zc');
+  if (!zc || zc === cursor) return;
+  cursor = zc;
+  const sync = () => {
+    const col = zc.classList.contains('is-tinted') ? zc.style.getPropertyValue('--zc-col').trim() : '';
+    if (col === cursorCol) return;
+    cursorCol = col;
+    if (col) document.documentElement.style.setProperty('--zz-cur', col);
+    else document.documentElement.style.removeProperty('--zz-cur');
+    const m = col.match(/\d+(\.\d+)?/g);
+    window.zzCur = m && m.length >= 3 ? m.slice(0, 3).map(Number) : null;
+  };
+  new MutationObserver(sync).observe(zc, { attributes: true, attributeFilter: ['class', 'style'] });
+  sync();
+}
+
 // The panels' scroller is drawn by the site's own script; pick it up once it is there.
 const find = () => {
+  if (!cursor?.isConnected) shareCursor();
   if (!columns[0]?.isConnected) bindColumns();
   if (stack?.isConnected) return;
   const el = document.querySelector('.cards .sg-stack');

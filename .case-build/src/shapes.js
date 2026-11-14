@@ -73,19 +73,6 @@ var zzShapes = (function () {
         if (w > 0.4) c.fillRect(0, y, SIZE, w);
       }
     }, [[Gy, G, K]]],
-    // A daisy turning by one petal a loop.
-    [(c, t, [, a, d]) => {
-      c.translate(64, 64); c.rotate(t / 8 * TAU / 12);
-      for (const [col, grow] of [[W, 3], [a, 0]]) {
-        c.fillStyle = col;
-        for (let i = 0; i < 12; i++) {
-          c.save(); c.rotate(i / 12 * TAU);
-          c.beginPath(); c.ellipse(33, 0, 17 + grow, 7 + grow, 0, 0, TAU); c.fill();
-          c.restore();
-        }
-      }
-      c.fillStyle = W; disc(c, 0, 0, 19); c.fillStyle = d; disc(c, 0, 0, 16);
-    }, [[G, E, Rd]]],
     // A many-pointed burst turning by one point a loop.
     [(c, t, [, a]) => {
       const n = 16, rot = t / 8 * TAU / n;

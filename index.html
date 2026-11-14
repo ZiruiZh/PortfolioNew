@@ -59,8 +59,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;600;700&family=Chivo+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <script>/* Sandboxed previews and embeds block browser storage; fall back to memory so the page still starts. */(function(){function m(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}["localStorage","sessionStorage"].forEach(function(n){try{window[n].getItem("_")}catch(e){try{Object.defineProperty(window,n,{value:m(),configurable:true})}catch(_){}}})})();</script>
-    <script type="module" src="./work/case-embed.js?v=1794679436"></script>
-    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794679436"></script>
+    <script type="module" src="./work/case-embed.js?v=1794681744"></script>
+    <script type="module" crossorigin src="./assets/index-DnZOTAZ6.js?v=1794681744"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-C-HYMxcf.css">
   </head>
   <body>
@@ -79,7 +79,7 @@
   /* The hand-off: the stack zooms in fast and the whole screen fades quickly behind it. Its background is the 3D
      view's own, so what appears is only the scene's works, lattice and pixel loops arriving on it. */
   #zz-loader.is-done{pointer-events:none}
-  #zz-loader.is-gone{opacity:0;visibility:hidden;transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility 0s linear .5s}
+  #zz-loader.is-gone{opacity:0;visibility:hidden;transition:opacity .6s cubic-bezier(.45,0,.55,1),visibility 0s linear .6s}
   #zz-loader .zl-sky{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.7}
   #zz-loader .zl-snake{position:absolute;left:50%;top:50%;width:0;height:0}
   #zz-loader .zl-snake>*{position:absolute;left:0;top:0;display:block;opacity:0;transform-origin:50% 50%;will-change:transform,opacity;
@@ -108,6 +108,7 @@
     var born = performance.now();
     var gl = sky.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: false });
     var drawSky = function () {};
+    var viewX = 1, viewY = 1;
     if (gl && gl.getExtension('OES_standard_derivatives')) (function () {
       var NOISE = 'vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}' +
         'float snoise(vec3 v){const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;i=mod289(i);' +
@@ -145,25 +146,38 @@
       gl.uniform3fv(U('uF'), F); gl.uniform3fv(U('uR'), Rv); gl.uniform3fv(U('uU'), Uv);
       function size() {
         // The scene's own sharpness: 1.5x on wide screens, 1.25x on phones.
-        var r = Math.min(devicePixelRatio || 1, innerWidth < 700 ? 1.25 : 1.5);
+        var r = 1; // screen resolution: a full-screen noise shader every frame is the intro's heaviest drawing
         sky.width = Math.round(innerWidth * r); sky.height = Math.round(innerHeight * r);
         gl.viewport(0, 0, sky.width, sky.height);
         var tanH = Math.tan((innerWidth < 700 ? 72 : 60) * Math.PI / 360);
-        gl.uniform2f(uView, tanH * innerWidth / innerHeight, tanH);
+        viewX = tanH * innerWidth / innerHeight; viewY = tanH;
       }
       size();
       addEventListener('resize', size);
-      drawSky = function (ms) { gl.uniform1f(uTime, ms / 1000); gl.drawArrays(gl.TRIANGLES, 0, 3); };
+      // k narrows the view: below 1 it is zoomed in.
+      drawSky = function (ms, k) { gl.uniform2f(uView, viewX * k, viewY * k); gl.uniform1f(uTime, ms / 1000); gl.drawArrays(gl.TRIANGLES, 0, 3); };
     })();
+    // The sky starts zoomed in two and a half times and pulls back to the scene's own view in step with the stack: it
+    // runs on the stack's own size clock (u, below) on an ease-in-out (sine), from u = 0 to the end of the final
+    // zoom (u = ZOOM + SPAN), so it is fully out exactly as the animation ends; the sine's gentle tail keeps it
+    // visibly easing out through the final zoom rather than seeming done before it. If the page is slow and the stack
+    // holds, the sky holds with it, just short of fully out, and finishes with the zoom. It is drawn every frame
+    // until then.
+    function skyEnd() { return (ZOOM || 1.7) + (SPAN || 0.35); } // (set further down)
+    function skyZoom(v) {
+      var p = Math.min(1, Math.max(0, v / skyEnd())), e = 0.5 - Math.cos(Math.PI * p) / 2;
+      return 0.4 + 0.6 * e;
+    }
     var skip = false;
     function loop(now) {
       if (!running) return;
       requestAnimationFrame(loop);
       place(now); // the stack (below) moves every frame
-      if ((skip = !skip)) return; // the sky, about 30 frames a second
-      drawSky(now - born);
+      skip = !skip;
+      if (skip && u > skyEnd() + 0.05) return; // once settled, the sky at about 30 frames a second
+      drawSky(now - born, skyZoom(u));
     }
-    drawSky(0);
+    drawSky(0, skyZoom(still ? 99 : 0));
 
     // ---- the stack: the home view's cloud, slithering out ------------------------------------------------------
     // Made of what the cloud is made of: five Playground pieces in white cards, the scene's markers (one off each
@@ -249,19 +263,6 @@ var zzShapes = (function () {
         if (w > 0.4) c.fillRect(0, y, SIZE, w);
       }
     }, [[Gy, G, K]]],
-    // A daisy turning by one petal a loop.
-    [(c, t, [, a, d]) => {
-      c.translate(64, 64); c.rotate(t / 8 * TAU / 12);
-      for (const [col, grow] of [[W, 3], [a, 0]]) {
-        c.fillStyle = col;
-        for (let i = 0; i < 12; i++) {
-          c.save(); c.rotate(i / 12 * TAU);
-          c.beginPath(); c.ellipse(33, 0, 17 + grow, 7 + grow, 0, 0, TAU); c.fill();
-          c.restore();
-        }
-      }
-      c.fillStyle = W; disc(c, 0, 0, 19); c.fillStyle = d; disc(c, 0, 0, 16);
-    }, [[G, E, Rd]]],
     // A many-pointed burst turning by one point a loop.
     [(c, t, [, a]) => {
       const n = 16, rot = t / 8 * TAU / n;
@@ -506,8 +507,9 @@ var zzShapes = (function () {
     function rnd(a, b) { return a + Math.random() * (b - a); }
 
     // The scene's printed grain (bundle Mg): fine noise, coarser blotches, rare light specks, worn edges.
-    function grain(c, w, h) {
-      var img = c.getImageData(0, 0, w, h), d = img.data, r = rng(Math.floor(Math.random() * 1e6) + 7);
+    function grain(c, w, h, x0) {
+      x0 = x0 || 0;
+      var img = c.getImageData(x0, 0, w, h), d = img.data, r = rng(Math.floor(Math.random() * 1e6) + 7);
       var bw = Math.ceil(w / 6), bl = new Float32Array(bw * Math.ceil(h / 6));
       for (var i = 0; i < bl.length; i++) bl[i] = r() - 0.5;
       for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
@@ -518,17 +520,20 @@ var zzShapes = (function () {
         if ((x > 0 && d[o - 1] < 8 || x < w - 1 && d[o + 7] < 8 || y > 0 && d[o - w * 4 + 3] < 8 || y < h - 1 && d[o + w * 4 + 3] < 8) && r() < 0.35) d[o + 3] = Math.floor(d[o + 3] * (0.35 + r() * 0.4));
         else if (r() < 0.012) d[o + 3] = Math.floor(d[o + 3] * 0.5);
       }
-      c.putImageData(img, 0, 0);
+      c.putImageData(img, x0, 0);
     }
     // A loop's eight frames on one strip, drawn as the scene draws them (bundle Ng): 16 x 16 cells of 8px, grained.
+    // Made a frame at a time, in order, as the loop first needs it (about a millisecond each), so no one frame of the
+    // intro carries the whole strip's work.
     function strip(f) {
-      var cv = document.createElement('canvas'); cv.width = 1024; cv.height = 128;
-      var c = cv.getContext('2d');
-      for (var t = 0; t < 8; t++) (function (x0) {
-        f(function (x, y, col) { if (x < 0 || y < 0 || x >= 16 || y >= 16) return; c.fillStyle = col; c.fillRect(x0 + x * 8, y * 8, 8, 8); }, t, [], c, x0);
-      })(t * 128);
-      grain(c, 1024, 128);
-      return cv;
+      var cv = document.createElement('canvas'), c = cv.getContext('2d'), made = 0;
+      cv.width = 1024; cv.height = 128;
+      return { canvas: cv, upTo: function (t) {
+        for (; made <= t; made++) (function (x0, n) {
+          f(function (x, y, col) { if (x < 0 || y < 0 || x >= 16 || y >= 16) return; c.fillStyle = col; c.fillRect(x0 + x * 8, y * 8, 8, 8); }, n, [], c, x0);
+          grain(c, 128, 128, x0);
+        })(made * 128, made);
+      } };
     }
     // The scene's nine markers (bundle buildRoutes), each on a 64px square, drawn once to stamp from.
     var MARKS = [
@@ -559,7 +564,8 @@ var zzShapes = (function () {
     function cardItem(src, size) {
       var cv = document.createElement('canvas'), im = new Image(), it = { el: cv, w: 0, h: 0, ready: false, card: true };
       im.decoding = 'async';
-      im.onload = function () {
+      // Decoded off the main thread before it is drawn (drawing an undecoded picture decodes it there and then).
+      var drawCard = function () {
         var w = im.naturalWidth, h = im.naturalHeight, c = cv.getContext('2d');
         cv.width = w + 20; cv.height = h + 20;
         var rr = function (x, y, rw, rh, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + rw, y, x + rw, y + rh, r); c.arcTo(x + rw, y + rh, x, y + rh, r); c.arcTo(x, y + rh, x, y, r); c.arcTo(x, y, x + rw, y, r); c.closePath(); };
@@ -571,18 +577,19 @@ var zzShapes = (function () {
         it.ready = true;
       };
       im.src = src;
+      (im.decode ? im.decode() : new Promise(function (ok) { im.onload = ok; })).then(drawCard, function () {});
       return it;
     }
     // One of the scene's pixel loops, smaller.
     function loopItem(f, size) {
-      var cv = document.createElement('canvas'), c = cv.getContext('2d'), frames = null;
+      var cv = document.createElement('canvas'), c = cv.getContext('2d'), frames = strip(f);
       cv.width = cv.height = 128;
       cv.style.width = cv.style.height = size + 'px';
       cv.className = 'zl-px';
       return { el: cv, w: size, h: size, ready: true, frame: -1, draw: function (t) {
-        frames = frames || strip(f); // made when it first comes out, not all at once
+        frames.upTo(t);
         c.clearRect(0, 0, 128, 128);
-        c.drawImage(frames, t * 128, 0, 128, 128, 0, 0, 128, 128);
+        c.drawImage(frames.canvas, t * 128, 0, 128, 128, 0, 0, 128, 128);
       } };
     }
     // In order along the body: the head, then the five pieces (a different order each visit) with three loops
@@ -689,63 +696,84 @@ var zzShapes = (function () {
 
     // ---- the motion -----------------------------------------------------------------------------------------
     // The path: a figure eight on its side (once across for twice up and down), so the body behind the head always
-    // bends in an S. It winds out from the middle: its size eases in over the first 1.2s.
+    // bends in an S. It winds out from the middle: its size eases in (to the power 2.2) over the first 1.3s.
     function path(s) {
-      var a = A * Math.pow(Math.min(1, Math.max(0, s) / 1.2), 1.5);
+      var a = A * Math.pow(Math.min(1, Math.max(0, s) / 1.3), 2.2);
       return [a * Math.sin(TURN * s), 0.42 * a * Math.sin(2 * TURN * s)];
     }
     // The size runs on one smooth curve from start to finish, on a clock of its own (u). Its logarithm is
-    // c u^2, plus b (u - ZOOM)^3 past ZOOM: the stack grows slowly at first and faster and faster, reaching full size
+    // c u^2.5, plus b (u - ZOOM)^3 past ZOOM: the stack grows very slowly at first and faster and faster, reaching full size
     // at u = ZOOM (1.7s), and from there the cubic term, which joins on with no jolt, makes the zoom: in 0.35s the
-    // head grows until it covers the screen (the others sixteen times, clearing as they go). If the page is ready
+    // head grows to more than the screen's size (the others sixteen times), all clearing as they go. If the page is ready
     // by then, u simply keeps time and nothing ever slows down. If it isn't, u eases to a stop just short of ZOOM
     // (its speed falling off over the last 0.35s), the stack holding at full size while it slithers on, and when
     // the page is ready u picks up speed again over about 0.2s and runs on into the zoom. Each item is 20ms behind
     // the one ahead in the zoom and is drawn to the middle as it swells.
-    var S0 = 0.18, ZOOM = 1.7, C = -Math.log(S0) / (ZOOM * ZOOM), SPAN = 0.35;
-    var lift = C * ((ZOOM + SPAN) * (ZOOM + SPAN) - ZOOM * ZOOM);
+    var S0 = 0.18, ZOOM = 1.7, PW = 2.5, C = -Math.log(S0) / Math.pow(ZOOM, PW), SPAN = 0.35;
+    var lift = C * (Math.pow(ZOOM + SPAN, PW) - Math.pow(ZOOM, PW));
     items.forEach(function (it, k) {
-      var F = k ? 16 : Math.max(16, 1.6 * large / it.w);
+      var F = k ? 16 : Math.max(16, 1.2 * large / it.w);
       it.B = (Math.log(F) - lift) / Math.pow(SPAN, 3);
     });
     var u = 0, rate = 1, lastNow = 0, handed = false, asked = false;
+    // The intro's own clock, clk (seconds). It starts only once the site has set up its 3D scene and the page then
+    // paints steadily (three frames in a row less than 50ms apart; or after 1.2s at most), so the site's own heavy
+    // start-up is over before the intro begins and it never begins mid-stutter. It never moves on more than
+    // a thirtieth of a second a frame: when the page stalls (the site setting itself up), the intro pauses there
+    // rather than jumping ahead. Until it starts, only the zoomed-in sky shows.
+    var clk = 0, steady = 0, started = false, firstAt = 0;
+    function tick(now) {
+      var gap = lastNow ? now - lastNow : 0; lastNow = now; firstAt = firstAt || now;
+      if (!started) {
+        steady = gap > 0 && gap < 50 ? steady + 1 : 0;
+        if ((steady >= 3 && window.zzScene) || now - firstAt > 1200) started = true;
+        return 0;
+      }
+      var dt = Math.min(1 / 30, gap / 1000);
+      clk += dt;
+      return dt;
+    }
     function place(now) {
-      var dt = lastNow ? Math.min(0.05, (now - lastNow) / 1000) : 0; lastNow = now;
+      var dt = tick(now);
       if (asked) rate += (1 - rate) * (1 - Math.exp(-dt / 0.2));
       else rate = Math.min(rate, Math.max(0, Math.min(1, (ZOOM - 0.02 - u) / 0.35)));
       u += dt * rate;
-      var s = (now - born) / 1000, step = Math.floor(s * 8) % 8, g = Math.exp(Math.log(S0) + C * Math.min(u, ZOOM) * Math.min(u, ZOOM));
+      var s = clk, step = Math.floor(s * 8) % 8, g = Math.exp(Math.log(S0) + C * Math.pow(Math.min(u, ZOOM), PW));
       for (var k = 0; k < items.length; k++) {
         var it = items[k], sk = s - k * LAG;
         it.shown = false;
         if (sk < 0 || !it.ready) { it.el.style.opacity = 0; continue; }
         if (it.draw && it.frame !== step) { it.frame = step; it.draw(step); }
         if (!it.since) it.since = now;
-        // Coming out. The head just fades in over 0.2s at its small size and from then on only follows the size
+        // Coming out. The head just fades in over 0.35s at its small size and from then on only follows the size
         // curve, so its growth only ever speeds up. The others come out from half size over 0.4s on a
         // smootherstep, which starts and ends without a jolt. A picture that loads late fades in over 0.25s.
         var o = Math.min(1, sk / 0.4), ss = o * o * o * (o * (o * 6 - 15) + 10);
-        var appear = k ? ss : Math.min(1, sk / 0.2), emerge = k ? 0.5 + 0.5 * ss : 1;
+        var ho = Math.min(1, sk / 0.35), appear = k ? ss : ho * ho * (3 - 2 * ho), emerge = k ? 0.5 + 0.5 * ss : 1;
         if (!it.draw && it.card) appear = Math.min(appear, (now - it.since) / 250);
         // A slight lean into the way it is going.
         var p = path(sk), q = path(sk - 0.02), lean = Math.max(-1, Math.min(1, (p[0] - q[0]) / (A * 0.07))) * 6;
         var z = Math.min(SPAN, Math.max(0, u - k * 0.02 - ZOOM)), e = z / SPAN, e2 = e * e, uk = Math.min(u, ZOOM + SPAN + k * 0.02);
-        var sc = Math.exp(Math.log(S0) + C * uk * uk + it.B * z * z * z) * emerge;
-        var op = appear * (1 - Math.max(0, (e - 0.6) / 0.4));
+        var sc = Math.exp(Math.log(S0) + C * Math.pow(uk, PW) + it.B * z * z * z) * emerge;
+        // Clearing: on a smoothstep through most of the zoom (the head from 20% to 85% of it, the others from 25%
+        // to 95%), so nothing blinks out and the head never covers the screen solid.
+        var fo = Math.max(0, Math.min(1, k ? (e - 0.25) / 0.7 : (e - 0.2) / 0.65)), op = appear * (1 - fo * fo * (3 - 2 * fo));
         p = [(p[0] + it.off[0] * g) * (1 - e2), (p[1] + it.off[1] * g) * (1 - e2)]; lean *= 1 - e;
         it.p = p; it.sc = sc; it.lean = lean; it.shown = appear > 0.6;
         it.el.style.opacity = op.toFixed(3);
         it.el.style.transform = 'translate3d(' + (p[0] - it.w / 2).toFixed(1) + 'px,' + (p[1] - it.h / 2).toFixed(1) + 'px,0) rotate(' +
           lean.toFixed(2) + 'deg) scale(' + sc.toFixed(3) + ')';
       }
-      drawLinks(now, s, g, 1 - Math.min(1, Math.max(0, u - ZOOM) / 0.12));
-      // Most of the way into the head's zoom, the scene and the cards make their entrance and the screen fades
-      // (quickly) from behind it.
-      if (!handed && u > ZOOM + 0.2) handed = true, handOff();
+      // The routes and loose markers clear over the first quarter second of the zoom, on a smoothstep.
+      var lf = Math.min(1, Math.max(0, u - ZOOM) / 0.25);
+      drawLinks(now, s, g, 1 - lf * lf * (3 - 2 * lf));
+      // As the zoom begins, the scene and the cards make their entrance and the screen fades (0.6s, eased at both
+      // ends) from behind it, so the zoom and the fade are one crossfade into the site.
+      if (!handed && u >= ZOOM) handed = true, handOff();
     }
     if (still) {
       // No motion: the stack as it stands at full size, still.
-      var hold = function () { u = ZOOM - 0.02; rate = 0; lastNow = 0; place(born + 1700); };
+      var hold = function () { u = ZOOM - 0.02; rate = 0; started = true; clk = 1.7; lastNow = 0; place(born + 1700); };
       hold(); setTimeout(hold, 500); setTimeout(hold, 1500); // again as the pictures arrive
     }
     var timer = 0;
@@ -774,7 +802,7 @@ var zzShapes = (function () {
       document.documentElement.classList.remove('zz-booting');
       dispatchEvent(new Event('zz:booted'));
       root.classList.add('is-gone');
-      setTimeout(function () { running = false; clearInterval(timer); gl && gl.getExtension('WEBGL_lose_context') && gl.getExtension('WEBGL_lose_context').loseContext(); root.remove(); }, still ? 50 : 700);
+      setTimeout(function () { running = false; clearInterval(timer); gl && gl.getExtension('WEBGL_lose_context') && gl.getExtension('WEBGL_lose_context').loseContext(); root.remove(); }, still ? 50 : 900); // once its fade is over
     }
     // Never stuck: whatever happens, the page shows within twelve seconds.
     setTimeout(function () { window.zzLoader.done(); }, 12000);
