@@ -83,16 +83,24 @@ html body .theme-ico .zz-tt,html body .theme-ico:hover .zz-tt,html body .theme-i
 @media (max-width:640px){html body .zz-topright .zz-recruiter{display:none!important}}
 @media (max-width:349px){html body .zz-topright{top:45px}}
 
-/* Phones: where the Info panels run under the top edge they blur as well as fade (the stack's own mask fades
-   them). The blur is a strip stuck to the top of the scrolling column, and it only blurs the panels (the column's
-   mask keeps the 3D view behind out of it). It shows once the panels have scrolled (zz-scrolled, info-swipe.js),
-   so the name card's top is sharp at rest. */
+/* Phones: the Info panels' column reaches the top of the screen (it started 56px down, so the panels were cut off at a
+   line partway down); the first panel's top margin keeps everything where it was at rest. As the panels scroll up they pass
+   under the nav and fade and blur together towards the top edge: one graded edge about 80px deep, blurred most at
+   the very top and easing out below. Both grow in with the first 40px of scrolling (--zz-k, 0 to 1, set by
+   info-swipe.js), rather than switching on. The blur is a strip stuck to the top of the column; the column's mask
+   keeps the 3D view behind out of it, so only the panels blur. */
 @media (max-width:640px){
-  html body .cards .sg-stack::before{content:"";display:block;position:sticky;top:0;z-index:5;height:34px;margin:-6px -14px -28px;
-    pointer-events:none;opacity:0;transition:opacity .2s ease-out;
-    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-    -webkit-mask-image:linear-gradient(#000 0,#000 30%,#0000 100%);mask-image:linear-gradient(#000 0,#000 30%,#0000 100%)}
-  html body .cards .sg-stack.zz-scrolled::before{opacity:1}
+  html body .cards .sg-stack{top:0!important;padding-top:0!important;
+    -webkit-mask-image:linear-gradient(transparent 0,transparent calc(var(--zz-k,0) * 16px),#000 calc(56px + var(--zz-k,0) * 26px));
+    mask-image:linear-gradient(transparent 0,transparent calc(var(--zz-k,0) * 16px),#000 calc(56px + var(--zz-k,0) * 26px))}
+  /* (The 62px above the first panel is that panel's top margin, not the column's padding: a sticky strip keeps
+     inside its scroller's padding, so padding would hold the blur 62px down.) */
+  html body .cards .sg-stack>.sg-col-l{margin-top:62px!important}
+  html body .cards .sg-stack::before{content:"";display:block;position:sticky;top:0;z-index:5;height:96px;margin:0 -14px -96px;
+    pointer-events:none;opacity:var(--zz-k,0);
+    -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+    -webkit-mask-image:linear-gradient(#000 0,rgba(0,0,0,.8) 35%,rgba(0,0,0,.35) 65%,transparent 100%);
+    mask-image:linear-gradient(#000 0,rgba(0,0,0,.8) 35%,rgba(0,0,0,.35) 65%,transparent 100%)}
 }
 
 /* Cool mode's home text reads a touch heavier: a hairline outline thickens every weight evenly.

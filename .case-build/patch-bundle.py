@@ -553,6 +553,21 @@ sub('r.marker?.position.copy(r.sprite.position),r.sprite.scale.set(',
 sub('n.copy(this.currentPos(a.a)).add(a.off),r.copy(this.currentPos(a.b)).add(a.off);',
     'n.copy(a.a.marker?a.a.marker.position:this.currentPos(a.a)).add(a.off),r.copy(a.b.marker?a.b.marker.position:this.currentPos(a.b)).add(a.off);')
 
+# ---- 34. A mouse wheel zooms; a trackpad's two-finger scroll still turns the view ---------------------------------
+# Browsers don't say which device a scroll comes from, so each burst of scrolling (no gap over 0.25s) is judged on its
+# first event and keeps that judgement: scrolling by lines or pages (Firefox's wheel), or in whole wheel notches of
+# 120 (wheelDeltaY) that aren't simply 3x the pixel delta (which is how Chrome and Safari report trackpad scrolling),
+# or a large whole-number step with no sideways part, is a mouse wheel; any sideways movement means a trackpad.
+# A wheel notch zooms by about 15% (down out, up in), and counts as zooming for the Works / Playground switches.
+# Pinching (ctrl + scroll) zooms as before.
+sub('locked=!1;wheel=e=>{if(!this.enabled||(e.preventDefault(),this.locked))return;if(e.ctrlKey){this.zzZt=performance.now(),this.zoomVel+=Math.sign(e.deltaY)*Math.min(Math.abs(e.deltaY),60)*.0012;return}',
+    'zzMouse(e){let T=performance.now(),G=this.zzWg;(!G||T-G.t>250)&&(G=this.zzWg={m:null,t:T}),G.t=T;'
+    'if(G.m===null){let w=e.wheelDeltaY;G.m=e.deltaMode?!0:e.deltaX?!1:w&&w===-3*e.deltaY?!1:w&&w%120===0?!0:Math.abs(e.deltaY)>=50&&Number.isInteger(e.deltaY)}'
+    'else e.deltaX&&(G.m=!1);return G.m}'
+    'locked=!1;wheel=e=>{if(!this.enabled||(e.preventDefault(),this.locked))return;if(e.ctrlKey){this.zzZt=performance.now(),this.zoomVel+=Math.sign(e.deltaY)*Math.min(Math.abs(e.deltaY),60)*.0012;return}'
+    'if(this.zzMouse(e)){let w=e.wheelDeltaY,n=w&&w%120===0?Math.abs(w)/120:e.deltaMode?Math.abs(e.deltaY)/3:Math.abs(e.deltaY)/100;'
+    'this.zzZt=performance.now(),this.zoomVel+=Math.sign(e.deltaY)*Math.min(n,3)*.015;return}')
+
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
 open(CSS_OUT, 'w').write(css)

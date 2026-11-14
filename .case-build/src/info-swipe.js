@@ -12,6 +12,8 @@
 // On wider screens a sideways trackpad scroll over the panels does the same: the left column follows a scroll to
 // the left and the right column a scroll to the right, the two moving apart one to one. Past 160px they slide
 // off and Works opens; let go short of that and they spring back.
+//
+// And anywhere outside the panels, a scroll or a drag on the home view's background opens Works (below).
 
 import { rubber, give, unrubber, spring, glide, tick } from './motion.js';
 
@@ -217,8 +219,8 @@ function bind(el) {
   el.addEventListener('click', event => {
     if (performance.now() < quietUntil) { event.preventDefault(); event.stopPropagation(); }
   }, true);
-  // The blur along the column's top edge (case-window.css) shows once the panels have scrolled under it.
-  const scrolled = () => el.classList.toggle('zz-scrolled', el.scrollTop > 2);
+  // The fade and blur along the column's top edge (case-window.css) grow in over the first 40px of scrolling.
+  const scrolled = () => el.style.setProperty('--zz-k', Math.min(1, Math.max(0, el.scrollTop) / 40).toFixed(3));
   el.addEventListener('scroll', scrolled, { passive: true });
   scrolled();
 }
@@ -288,6 +290,40 @@ function bindColumns() {
   columns = found;
   for (const el of columns) el.addEventListener('wheel', onWheel, { passive: false });
 }
+
+// ---- the home view (Info): a scroll or a drag on the open background goes to Works ----------------------------------
+// Anywhere outside the panels, the nav and the corners: about 40px of scrolling up or down (or sideways), or a drag of
+// more than 12px, opens Works as its nav button does. Scrolling over a panel still scrolls the panel. (A plain click
+// on the background already opens Works.)
+const NOT_BACKGROUND = '.card, header, nav, button, a, input, label, .case, [role=dialog], .sg, .sg-col, .sg-stack, .dial, .zz-topright, .corner-bl, .corner-br';
+const atHome = () => !!document.querySelector('.cards.is-open:not(.case-open)');
+const onBackground = target => target instanceof Element && !target.closest(NOT_BACKGROUND);
+let homeLeft = 0, homeScroll = 0, homeScrollAt = 0, homeDrag = null;
+function leaveHome() {
+  const now = performance.now();
+  if (now - homeLeft < 1500) return;
+  homeLeft = now;
+  showWorks();
+}
+addEventListener('wheel', event => {
+  if (!atHome() || busy || event.ctrlKey || !onBackground(event.target)) return;
+  const now = performance.now(), unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
+  if (now - homeScrollAt > 250) homeScroll = 0;
+  homeScrollAt = now;
+  homeScroll += (Math.abs(event.deltaY) + Math.abs(event.deltaX)) * unit;
+  if (homeScroll > 40) { homeScroll = 0; leaveHome(); }
+}, { passive: true, capture: true });
+addEventListener('pointerdown', event => {
+  homeDrag = atHome() && !busy && event.button === 0 && onBackground(event.target)
+    ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
+}, true);
+addEventListener('pointermove', event => {
+  if (!homeDrag || event.pointerId !== homeDrag.id) return;
+  if (Math.hypot(event.clientX - homeDrag.x, event.clientY - homeDrag.y) > 12) { homeDrag = null; leaveHome(); }
+}, true);
+const endHomeDrag = event => { if (homeDrag?.id === event.pointerId) homeDrag = null; };
+addEventListener('pointerup', endHomeDrag, true);
+addEventListener('pointercancel', endHomeDrag, true);
 
 // The panels' scroller is drawn by the site's own script; pick it up once it is there.
 const find = () => {
