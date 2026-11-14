@@ -61,14 +61,14 @@ function reveal(scope, sheet) {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
       const block = entry.target;
-      block.style.setProperty('--zz-d', `${(n++ * 0.07).toFixed(2)}s`);
+      block.style.setProperty('--zz-d', `${(n++ * 0.09).toFixed(2)}s`);
       block.classList.add('is-in');
       loadPosters(block);
       seen.unobserve(block);
       // Once in, it drops the effect (and the blur filter with it) so it draws as usual.
-      setTimeout(() => block.classList.remove('zz-reveal', 'is-in'), 1400);
+      setTimeout(() => block.classList.remove('zz-reveal', 'is-in'), 2200);
     }
-  }, { root: sheet, rootMargin: '0px 0px -6% 0px', threshold: 0.08 });
+  }, { root: sheet, rootMargin: '0px 0px -4% 0px', threshold: 0.05 });
   later.forEach(block => seen.observe(block));
   return () => { near.disconnect(); seen.disconnect(); };
 }
