@@ -680,6 +680,23 @@ sub('g*Math.min(1,this.zzIn*1.5),r.marker&&(r.marker.material.opacity=r.sprite.m
     'g*Math.min(1,this.zzIn*1.5)*(r.zzCloudOnly?this.cloud.v:1),r.marker&&(r.marker.material.opacity=r.sprite.material.opacity,r.marker.visible=g>.02),'
     'r.sprite.visible=!!r.sprite.material.map&&g>.02&&(!r.zzCloudOnly||this.cloud.v>.02)')
 
+# ---- 41. Left open for a long time, the view no longer turns inverted ----------------------------------------------------
+# The glitch pass over the 3D view (the occasional torn bands, inverted and cyan blocks) picks its blocks with a sine
+# hash of the scene clock, which keeps counting while the tab sits in the background. Past about an hour the GPU's sine
+# of such large numbers collapses, the hash comes out 0 for every block, and since the glitch strength only ever fades
+# towards zero (never reaching it), every block passed the "invert this one" test: the whole view turned negative and
+# stayed that way. The pass now hashes the clock wrapped to a small range (it only needs a fresh pattern 14 times a
+# second), and the strength settles to exactly 0 between bursts, so no block inverts then. The contour sky's grain,
+# dust and cursor-lens wobble get the same wrapping, so they too look the same after hours as in the first minute.
+sub('float tb = floor(uTime * 14.0);', 'float tb = mod(floor(uTime * 14.0), 2048.0);')
+sub('hash(vUv * 1000.0 + uTime)', 'hash(vUv * 1000.0 + mod(uTime, 64.0))')
+sub('this.glitchAmt+=(0-this.glitchAmt)*Math.min(1,e*7),', 'this.glitchAmt+=(0-this.glitchAmt)*Math.min(1,e*7),this.glitchAmt<.002&&(this.glitchAmt=0),')
+sub('gl_FragCoord.xy + t*37.0', 'gl_FragCoord.xy + mod(t, 32.0)*37.0')
+sub('sin(t * 2.0 - md * 40.0)', 'sin(mod(t, 6.2831853) * 2.0 - md * 40.0)')
+sub('sin(t * 3.0)', 'sin(mod(t, 6.2831853) * 3.0)')
+sub('floor(t*12.0)', 'mod(floor(t*12.0), 1024.0)')
+sub('floor(t*6.0)', 'mod(floor(t*6.0), 1024.0)')
+
 open(OUT, 'w').write(s)
 css = open(CSS_SRC).read()
 open(CSS_OUT, 'w').write(css)
